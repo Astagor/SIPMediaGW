@@ -281,6 +281,12 @@ class EduMeet extends UIHelper {
         // An open leave dialog would hold every other control behind it.
         const cancel = this._control('leave-cancel');
         if (cancel) cancel.click();
+        // s and q start and stop the room's content, so a repeated s must not stop it.
+        if ((key === 's' || key === 'q') && this._isOn('screenshare') !== null) {
+            this._setToggle('screenshare', key === 's');
+            console.log('[✓] Screen sharing: ' + (key === 's' ? 'on' : 'off'));
+            return;
+        }
         const control = this._control(CONTROL_KEYS[key]);
         if (control) {
             control.click();
