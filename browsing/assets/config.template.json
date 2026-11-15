@@ -454,13 +454,13 @@
   "lang": "${IVR_LANG}",
   "ivr_prompts": {
     "fr": {
-      "domain": "Choisissez la plateforme sur votre téléphone (QR code)<br>ou entrez son numéro, puis #",
-      "room": "Saisissez le nom de la salle sur votre téléphone<br><span class=\"sub\">Scannez le QR code, ou ouvrez le lien sous celui-ci et entrez le code</span>",
+      "domain": "Veuillez entrer le numéro de la plateforme suivi de #<br>(utilisez * pour corriger)",
+      "room": "Veuillez entrer le numéro de votre conférence suivi de #<br>(utilisez * pour corriger)",
       "password": "Veuillez entrer le mot de passe suivi de #<br>(utilisez * pour corriger)"
     },
     "en": {
-      "domain": "Choose the platform on your phone (QR code)<br>or enter its number, then #",
-      "room": "Type the room name on your phone<br><span class=\"sub\">Scan the QR code, or open the link under it and enter the code</span>",
+      "domain": "Please enter the platform number followed by #<br>(use * to correct)",
+      "room": "Please enter your conference number followed by #<br>(use * to correct)",
       "password": "Please enter the password followed by #<br>(use * to correct)"
     }
   }
