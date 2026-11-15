@@ -7,7 +7,8 @@ const messages = {
         incomplete: (count, expected) => `Le code est trop court (${count}/${expected})`,
         error: reason => `Erreur : ${reason}`,
         chosenDomain: (id, name) => `Plateforme sélectionnée (${id}) : ${name}`,
-        confirmContinue: "— appuyez sur '#' pour continuer"
+        confirmContinue: "— appuyez sur '#' pour continuer",
+        endsIn: time => `L'appel se termine dans ${time} si aucune réunion n'est choisie`
     },
     en: {
         valid: code => `Code validated: ${code}`,
@@ -15,7 +16,8 @@ const messages = {
         incomplete: (count, expected) => `The code is too short (${count}/${expected})`,
         error: reason => `Error: ${reason}`,
         chosenDomain: (id, name) => `Platform selected (${id}): ${name}`,
-        confirmContinue: "— press '#' to continue"
+        confirmContinue: "— press '#' to continue",
+        endsIn: time => `The call ends in ${time} if no meeting is chosen`
     }
 };
 
@@ -312,4 +314,27 @@ function initIVR(config) {
         showPrompt();
         updateDisplay();
     }
+
+    // ivr.py sets window.ivrDeadline (milliseconds) when IVR_TIMEOUT is set: the call
+    // ends then, unless a meeting is chosen. The page may have no element for it.
+    let countdownEl = document.getElementById("countdown");
+    if (!countdownEl) {
+        countdownEl = document.createElement("div");
+        countdownEl.id = "countdown";
+        statusEl.insertAdjacentElement("afterend", countdownEl);
+    }
+    function showCountdown() {
+        if (!window.ivrDeadline || window.room) {
+            countdownEl.textContent = "";
+            countdownEl.style.display = "none";
+            return;
+        }
+        const left = Math.max(0, Math.ceil((window.ivrDeadline - Date.now()) / 1000));
+        const time = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+        countdownEl.textContent = messages[lang].endsIn(time);
+        countdownEl.classList.toggle("ending", left <= 60);
+        countdownEl.style.display = "block";
+    }
+    showCountdown();
+    setInterval(showCountdown, 1000);
 }
