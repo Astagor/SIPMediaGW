@@ -52,9 +52,11 @@ let rejectedCode = '';
 // Set when the proxy has had enough attempts from here for the moment.
 let waited = false;
 
-// When no language was chosen yet, fall back to the browser's, so a visitor
-// arriving straight here (from the room's QR code) starts in their language.
+// When no language was chosen yet, use the service's (BRAND.lang), else fall back
+// to the browser's, so a visitor arriving straight here (from the room's QR code)
+// starts in their language.
 let lang = localStorage.getItem('lang')
+  || (typeof BRAND !== 'undefined' && BRAND.lang)
   || ((navigator.language || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'fr');
 if (!TEXTS[lang]) lang = 'fr';
 

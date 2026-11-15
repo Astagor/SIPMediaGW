@@ -1098,7 +1098,7 @@ $('theme-toggle').addEventListener('click', () => {
 });
 
 onReady(() => {
-  const saved = localStorage.getItem('lang');
+  const saved = localStorage.getItem('lang') || (typeof BRAND !== 'undefined' && BRAND.lang);
   if (saved && TEXTS[saved]) currentLang = saved;
   renderLangSwitch();
   fetchIvrConfigAndRestoreState();

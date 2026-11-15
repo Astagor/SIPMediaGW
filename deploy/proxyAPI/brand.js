@@ -11,6 +11,10 @@ const BRAND = {
   docUrl: '/portal',
   docLabelFr: 'Présentation du service',
   docLabelEn: 'Service overview',
+
+  // The language of the pages until the visitor chooses one: 'fr' or 'en'.
+  // Unset, the pairing page follows the browser and the portal starts in French.
+  // lang: 'en',
 };
 
 document.title = BRAND.name;
