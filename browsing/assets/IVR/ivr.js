@@ -42,8 +42,12 @@ function initIVR(config) {
     // (the room may contain dots), in any case. A platform is in the group of its own
     // key and in the groups of its "groups" field. Only the group is shown and numbered.
     // An address that starts with a digit keeps its meaning: the platform number.
+    // A platform with "listed": false is left out of the full list: only its key and
+    // its groups reach it.
     const group = groupFromSipAddress(config['webrtc_domains'], urlMixedId);
-    const domains = parseDomains(group ? group.platforms : config['webrtc_domains']);
+    const listed = Object.fromEntries(Object.entries(config['webrtc_domains'])
+        .filter(([, obj]) => obj.listed !== false));
+    const domains = parseDomains(group ? group.platforms : listed);
     // The launcher gives the phone the same platforms, in the same order.
     window.shownDomainKeys = Object.values(domains).map(d => d.key);
 
