@@ -184,6 +184,10 @@ class IVR:
         with open(jsScript, "r", encoding="utf-8") as f:
             jsScript = f.read()
         self.driver.execute_script(jsScript)
+        if self.IVRTimeout:
+            # The room screen counts down to the end of the call (ivr.js).
+            self.driver.execute_script("window.ivrDeadline = arguments[0];",
+                                       int((startTime + self.IVRTimeout) * 1000))
         self.readPairingCode(self.driver)
 
         while True:
