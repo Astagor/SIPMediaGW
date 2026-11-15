@@ -381,12 +381,29 @@ class DockerGateway:
         webrtcDomains = browsingConfig.get('webrtc_domains', {})
         roomNameInfo = browsingConfig.get('room_name_info', {})
 
+        # The room screen may show a group of the platforms (from the SIP address): the
+        # phone gets the same ones, in the same order, so that their numbers match.
+        shown = self.shownDomainKeys(gwName)
+        if shown and isinstance(webrtcDomains, dict):
+            webrtcDomains = {key: webrtcDomains[key] for key in shown if key in webrtcDomains}
+
         return {
             "status": "success",
             "menus": menus,
             "webrtc_domains": webrtcDomains,
             "room_name_info": roomNameInfo
         }
+
+    def shownDomainKeys(self, gwName: str):
+        """The keys of the platforms on the room screen, or None for all of them."""
+        res = subprocess.Popen(['docker', 'exec', gwName, 'printenv', 'GW_ID'],
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, _ = res.communicate()
+        try:
+            keys = self.executeInExistingChromeSession(out.decode().strip(), "return window.shownDomainKeys || null;")
+        except Exception:
+            return None
+        return keys if isinstance(keys, list) else None
 
     def getSeleniumSessionId(self, gwId):
         seleniumSessionId = ''

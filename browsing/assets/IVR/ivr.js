@@ -35,7 +35,15 @@ function initIVR(config) {
     const prompts = config['ivr_prompts'];
     const lang = config['lang'] || 'fr';
     const expectedLength = parseInt(config['min_ivr_digit_length'], 10) || 0;
-    const domains = parseDomains(config['webrtc_domains']);
+    const urlMixedId = new URLSearchParams(window.location.search).get("mixedId");
+    // The SIP address may name a group of platforms by a code: "code", or "code.room"
+    // (the room may contain dots), in any case. A platform is in the group of its own
+    // key and in the groups of its "groups" field. Only the group is shown and numbered.
+    // An address that starts with a digit keeps its meaning: the platform number.
+    const group = groupFromSipAddress(config['webrtc_domains'], urlMixedId);
+    const domains = parseDomains(group ? group.platforms : config['webrtc_domains']);
+    // The launcher gives the phone the same platforms, in the same order.
+    window.shownDomainKeys = Object.values(domains).map(d => d.key);
 
     let inputDigits = [];
     let stage = "domain"; // 'domain' -> 'room'
@@ -52,6 +60,20 @@ function initIVR(config) {
             index++;
         }
         return dict;
+    }
+
+    function groupFromSipAddress(raw, mixedId) {
+        if (!mixedId || /^[0-9]/.test(mixedId)) return null;
+        const members = code => Object.fromEntries(Object.entries(raw).filter(([key, obj]) =>
+            [key, ...(obj.groups || [])].some(name => String(name).toLowerCase() === code.toLowerCase())));
+        let platforms = members(mixedId);
+        if (Object.keys(platforms).length) return { platforms, room: null };
+        const sep = mixedId.search(/[#.]/);
+        if (sep > 0) {
+            platforms = members(mixedId.slice(0, sep));
+            if (Object.keys(platforms).length) return { platforms, room: mixedId.slice(sep + 1) };
+        }
+        return null;
     }
 
     function updateDisplay() {
@@ -236,13 +258,15 @@ function initIVR(config) {
     const urlDomainId = urlParams.get("domainId");
     const urlDomainKey = urlParams.get("domainKey");
     const urlRoomId = urlParams.get("roomId");
-    const urlMixedId = urlParams.get("mixedId");
 
     if (urlRoomId && urlRoomId !== '0') pendingRoomId = urlRoomId;
 
     if (urlMixedId) {
         let d = null, r = null;
-        if (/^[1-9]$/.test(urlMixedId)) {
+        if (group) {
+            // Only the group is shown; a group of one platform is selected below.
+            r = group.room;
+        } else if (/^[1-9]$/.test(urlMixedId)) {
             d = urlMixedId;
         } else {
             // Split on '#' or '.'
