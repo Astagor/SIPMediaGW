@@ -10,7 +10,8 @@ const messages = {
         confirmContinue: "— appuyez sur '#' pour continuer",
         endsIn: time => `L'appel se termine dans ${time} si aucune réunion n'est choisie`,
         allPlatforms: 'Toutes les plateformes',
-        keypad: all => `Clavier : un nom de salle en chiffres, puis # · * corrige${all ? ` · 0 # ${all}` : ''}`,
+        keypadEnter: 'Clavier : le numéro de la conférence, puis #',
+        keypad: (enter, all) => `${enter} · * corrige${all ? ` · 0 # ${all}` : ''}`,
         pages: (page, count) => `Page ${page} sur ${count} · # page suivante · * page précédente`
     },
     en: {
@@ -22,7 +23,8 @@ const messages = {
         confirmContinue: "— press '#' to continue",
         endsIn: time => `The call ends in ${time} if no meeting is chosen`,
         allPlatforms: 'All platforms',
-        keypad: all => `Keypad: a room name of digits only, then # · * corrects${all ? ` · 0 # ${all}` : ''}`,
+        keypadEnter: 'Keypad: the conference number, then #',
+        keypad: (enter, all) => `${enter} · * corrects${all ? ` · 0 # ${all}` : ''}`,
         pages: (page, count) => `Page ${page} of ${count} · # next page · * previous page`
     }
 };
@@ -40,7 +42,10 @@ function initIVR(config) {
     const statusEl = document.getElementById("status");
     const domainsEl = document.getElementById("domains");
 
-    const prompts = config['ivr_prompts'];
+    // The branding (window.ivrBrand) may replace prompts of a language, key by key.
+    const brand = window.ivrBrand || {};
+    const prompts = Object.fromEntries(Object.entries(config['ivr_prompts'])
+        .map(([l, p]) => [l, { ...p, ...((brand.prompts || {})[l] || {}) }]));
     const lang = config['lang'] || 'fr';
     const expectedLength = parseInt(config['min_ivr_digit_length'], 10) || 0;
     const urlMixedId = new URLSearchParams(window.location.search).get("mixedId");
@@ -58,7 +63,8 @@ function initIVR(config) {
     window.shownDomainKeys = Object.values(domains).map(d => d.key);
     // 0 # leads to the full list: from a group that does not hold all of it, and from
     // the room step back to the choice of the platform. The branding may rename it.
-    const allName = (window.ivrBrand && window.ivrBrand.allPlatforms) || messages[lang].allPlatforms;
+    const allName = brand.allPlatforms || messages[lang].allPlatforms;
+    const keypadEnter = (brand.keypad || {})[lang] || messages[lang].keypadEnter;
     const PAGE_SIZE = 20;
     let page = 0;
 
@@ -207,7 +213,7 @@ function initIVR(config) {
             domainsEl.classList.add("hidden");
             pageLine().hidden = true;
             const keypad = keypadLine();
-            keypad.textContent = messages[lang].keypad(canGoToFullList() ? allName : '');
+            keypad.textContent = messages[lang].keypad(keypadEnter, canGoToFullList() ? allName : '');
             keypad.hidden = false;
             playPromptAudio("conference", lang);
         }
