@@ -196,11 +196,13 @@ class IVR:
                 print("IVR Timeout", flush=True)
                 return {}
             try:
-                if not browsingName:
-                    browsingName = self.driver.execute_script("return window.browsing")
-                    if browsingName:
-                        print("IVR: browsing: {}".format(browsingName), flush=True)
-                else:
+                # Read on every turn: 0 # on the room step goes back to the list of the
+                # platforms, and the phone follows the empty value to that list.
+                browsing = self.driver.execute_script("return window.browsing") or ''
+                if browsing != browsingName:
+                    browsingName = browsing
+                    print("IVR: browsing: {}".format(browsingName), flush=True)
+                if browsingName:
                     room = self.driver.execute_script("return window.room")
                     if room:
                         print("IVR: room: {}".format(room['roomName']), flush=True)

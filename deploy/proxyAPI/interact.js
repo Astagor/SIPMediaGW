@@ -5,6 +5,8 @@ let pollingStarted = false;
 let ivrMenus = {};
 let webrtcDomains = {};
 let roomNameInfo = {};
+// The room screen shows only a group of the listed platforms: 0 # leads to all of them.
+let ivrWiden = false;
 let browsingName = '';
 let menuOptions = [];
 let menuDisplayed = false;
@@ -23,7 +25,9 @@ const TEXTS = {
   fr: {
     title: 'Contrôler votre réunion',
     pickPlatform: 'Choisissez la plateforme de votre réunion',
-    roomName: 'Nom de la salle :',
+    roomName: 'Nom dans la réunion :',
+    allPlatforms: 'Toutes les plateformes',
+    allPlatformsHost: 'toutes les instances',
     roomUri: 'Adresse vidéo :',
     connecting: 'connexion en cours…',
     defaultRoom: 'Ma salle',
@@ -61,7 +65,9 @@ const TEXTS = {
   en: {
     title: 'Control your meeting',
     pickPlatform: 'Choose your meeting platform',
-    roomName: 'Room name:',
+    roomName: 'Name in the meeting:',
+    allPlatforms: 'All platforms',
+    allPlatformsHost: 'all instances',
     roomUri: 'Video address:',
     connecting: 'connecting…',
     defaultRoom: 'My room',
@@ -169,10 +175,12 @@ function updateRoomNameInputUi() {
   const selectedInfo = browsingName && roomNameInfo[browsingModule(browsingName)] ? roomNameInfo[browsingModule(browsingName)] : null;
   const lang = currentLang === 'fr' ? 'fr' : 'en';
   const placeholder = getRoomNamePlaceholder();
-  const hint = selectedInfo?.hint?.[lang] || selectedInfo?.hint?.en || '';
+  // {domain} in a hint is the host of the platform chosen.
+  const domain = (webrtcDomains[browsingName] && webrtcDomains[browsingName].domain) || '';
+  const hint = (selectedInfo?.hint?.[lang] || selectedInfo?.hint?.en || '').replaceAll('{domain}', domain);
 
   const labelEl = $('meeting-label');
-  if (labelEl) labelEl.textContent = TEXTS[currentLang].meetingLabel;
+  if (labelEl) labelEl.textContent = selectedInfo?.label?.[lang] || selectedInfo?.label?.en || TEXTS[currentLang].meetingLabel;
 
   captureEl.placeholder = captureEl.value ? '' : placeholder;
   if (hintEl) {
@@ -474,6 +482,7 @@ async function fetchIvrConfigAndRestoreState() {
     ivrMenus = data.menus || {};
     webrtcDomains = data.webrtc_domains || {};
     roomNameInfo = data.room_name_info || {};
+    ivrWiden = data.widen === true;
     renderLangSwitch();
     const statusRes = await fetch(apiUrl('/status') + `?gw_id=${encodeURIComponent(gwId)}`);
     if (!statusRes.ok) { renderDomainButtons(); return; }
@@ -573,7 +582,44 @@ function renderDomainButtons() {
     list.appendChild(btn);
   });
 
+  if (ivrWiden) list.appendChild(allPlatformsButton(domains.length));
+
   showRoom();     // a card built now takes the current waiting state
+}
+
+function allPlatformsName() {
+  return (typeof BRAND !== 'undefined' && BRAND.allPlatforms) || TEXTS[currentLang].allPlatforms;
+}
+
+// 0 # on the room screen: the full list of the platforms, which the phone then reads again.
+async function showAllPlatforms(clearCount) {
+  for (let i = 0; i < clearCount; i++) await sendKey('*');
+  await sendKey('0');
+  await sendKey('#');
+  if (await reloadIvrConfig()) {
+    lastScreen = null;
+    renderDomainButtons();
+  }
+}
+
+function allPlatformsButton(count) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'platform platform--all';
+  const text = document.createElement('span');
+  text.className = 'platform__text';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'platform__name';
+  nameEl.textContent = allPlatformsName();
+  const hostEl = document.createElement('span');
+  hostEl.className = 'platform__host';
+  hostEl.textContent = TEXTS[currentLang].allPlatformsHost;
+  text.append(nameEl, hostEl);
+  btn.append(text);
+  btn.setAttribute('aria-label', allPlatformsName());
+  // Past nine platforms the gateway adds digits up: clear any typed on the room's keypad.
+  btn.onclick = () => showAllPlatforms(count > 9 ? String(count).length : 0);
+  return btn;
 }
 
 function showInputAndPrepareMenu(selectedDomainKey) {
@@ -598,6 +644,25 @@ function showInputAndPrepareMenu(selectedDomainKey) {
   capture.disabled = false;
   updateRoomNameInputUi();
   refreshJoin();
+
+  // Back to the choice of the platform, among all of them (0 # on the room step).
+  let all = $('btn-all');
+  if (!all) {
+    all = document.createElement('button');
+    all.type = 'button';
+    all.id = 'btn-all';
+    all.className = 'link-button';
+    all.onclick = async () => {
+      await sendRoomName('0');
+      if (await reloadIvrConfig()) {
+        lastScreen = null;
+        renderDomainButtons();
+      }
+    };
+    $('btn-enter').insertAdjacentElement('afterend', all);
+  }
+  all.textContent = allPlatformsName();
+  all.hidden = !ivrWiden;
 
   if (!document.activeElement || document.activeElement === document.body) {
     capture.focus();
@@ -636,6 +701,7 @@ async function reloadIvrConfig() {
     ivrMenus = data.menus || {};
     webrtcDomains = domains;
     roomNameInfo = data.room_name_info || {};
+    ivrWiden = data.widen === true;
     renderLangSwitch();
     return true;
   } catch (e) {
@@ -715,7 +781,8 @@ async function checkGwStatus() {
       } else {
         menuOptions = [];
         menuDisplayed = false;
-        renderDomainButtons();
+        // 0 # on the room screen may have widened the list: read it again first.
+        reloadIvrConfig().then(() => renderDomainButtons());
       }
     }
   } catch(e) {

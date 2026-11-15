@@ -49,6 +49,30 @@
   gap: .5rem;
   margin-top: .6rem;
 }
+/* Less than a full row (a group of the SIP address): centred, as on the room screen. */
+.platforms:not(:has(> :nth-child(3))) {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 1rem) / 3);
+  justify-content: center;
+}
+.platform--all {
+  box-shadow: none;
+  border: 1px dashed var(--muted);
+  font-style: italic;
+}
+/* Back to all the platforms from the room step: a secondary action. */
+.link-button {
+  display: block;
+  margin: .9rem auto 0;
+  padding: .3rem .6rem;
+  border: 0;
+  background: none;
+  color: var(--bf);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .platform {
   position: relative;
   display: flex;
