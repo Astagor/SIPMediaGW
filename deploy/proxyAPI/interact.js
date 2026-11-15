@@ -1098,8 +1098,12 @@ $('theme-toggle').addEventListener('click', () => {
 });
 
 onReady(() => {
-  const saved = localStorage.getItem('lang') || (typeof BRAND !== 'undefined' && BRAND.lang);
+  // BRAND.langSwitch false keeps the page in BRAND.lang, without the language switch.
+  const fixed = typeof BRAND !== 'undefined' && BRAND.langSwitch === false && TEXTS[BRAND.lang]
+    ? BRAND.lang : '';
+  const saved = fixed || localStorage.getItem('lang') || (typeof BRAND !== 'undefined' && BRAND.lang);
   if (saved && TEXTS[saved]) currentLang = saved;
+  if (fixed) $('lang-fr').parentElement.hidden = true;
   renderLangSwitch();
   fetchIvrConfigAndRestoreState();
   // call after initial render to hide slide-controls when appropriate

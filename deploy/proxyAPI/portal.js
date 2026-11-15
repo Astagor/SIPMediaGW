@@ -59,7 +59,10 @@
   };
 
   let lang = 'fr';
-  try { lang = localStorage.getItem('lang') || (typeof BRAND !== 'undefined' && BRAND.lang) || 'fr'; } catch (e) {}
+  try {
+    lang = (typeof BRAND !== 'undefined' && BRAND.langSwitch === false && BRAND.lang)
+      || localStorage.getItem('lang') || (typeof BRAND !== 'undefined' && BRAND.lang) || 'fr';
+  } catch (e) {}
   if (!TEXTS[lang]) lang = 'fr';
 
   // Declared before applyLang: the step-2 copy, the headline and the diagram

@@ -55,7 +55,11 @@ let waited = false;
 // When no language was chosen yet, use the service's (BRAND.lang), else fall back
 // to the browser's, so a visitor arriving straight here (from the room's QR code)
 // starts in their language.
-let lang = localStorage.getItem('lang')
+// BRAND.langSwitch false keeps the pages in BRAND.lang, without the language switch.
+const langFixed = typeof BRAND !== 'undefined' && BRAND.langSwitch === false && TEXTS[BRAND.lang]
+  ? BRAND.lang : '';
+let lang = langFixed
+  || localStorage.getItem('lang')
   || (typeof BRAND !== 'undefined' && BRAND.lang)
   || ((navigator.language || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'fr');
 if (!TEXTS[lang]) lang = 'fr';
@@ -229,6 +233,7 @@ buildBoxes();
 
 $('lang-fr').addEventListener('click', () => setLang('fr'));
 $('lang-en').addEventListener('click', () => setLang('en'));
+if (langFixed) $('lang-fr').parentElement.hidden = true;
 // A click in the gaps between boxes lands on the strip itself; send it to the
 // first box still waiting for a character.
 $('code-boxes').addEventListener('mousedown', (e) => {
