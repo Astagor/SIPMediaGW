@@ -109,6 +109,31 @@ body {
   text-align: center;
 }
 
+#message .sub {
+  font-weight: 400;
+  font-size: 1.05rem;
+}
+
+/* The page of a long platform list, and what the keypad does on the room step */
+#pages,
+#keypad-help {
+  font-size: 1rem;
+  color: #6b7390;
+  text-align: center;
+}
+
+#pages {
+  margin: -1rem 0 1rem;
+}
+
+#keypad-help {
+  margin-top: 0.6rem;
+}
+
+#domains .domain-all {
+  font-style: italic;
+}
+
 /* ============================
    Domains list
    ============================ */

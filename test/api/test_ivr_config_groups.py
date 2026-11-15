@@ -28,11 +28,11 @@ def process(out):
     return p
 
 
-def ivr_config(shown=None, error=None):
+def ivr_config(shown=None, error=None, config=CONFIG):
     gw = DockerGateway()
     browser = MagicMock(return_value=shown, side_effect=error)
     with patch("HTTPLauncher.DockerGateway.get_gw_info", return_value={"Name": "gw-container"}), \
-            patch("subprocess.Popen", side_effect=[process(json.dumps(CONFIG).encode()), process(b"3\n")]) as popen, \
+            patch("subprocess.Popen", side_effect=[process(json.dumps(config).encode()), process(b"3\n")]) as popen, \
             patch.object(DockerGateway, "executeInExistingChromeSession", browser):
         result = gw.getIvrConfig("gw1")
     return result, popen, browser
@@ -63,6 +63,28 @@ def test_all_platforms_when_the_browser_cannot_answer():
     result, _, _ = ivr_config(error=RuntimeError("no browser session on this gateway"))
     assert list(result["webrtc_domains"]) == ["arnes", "pcss", "dev"]
     assert result["status"] == "success"
+
+
+def test_a_group_that_leaves_platforms_out_can_widen():
+    result, _, _ = ivr_config(["pcss", "dev"])
+    assert result["widen"] is True
+
+
+def test_the_full_list_cannot_widen():
+    result, _, _ = ivr_config(["arnes", "pcss", "dev"])
+    assert result["widen"] is False
+
+
+def test_no_room_screen_no_widen():
+    result, _, _ = ivr_config(None)
+    assert result["widen"] is False
+
+
+def test_unlisted_platforms_do_not_count():
+    config = json.loads(json.dumps(CONFIG))
+    config["webrtc_domains"]["dev"]["listed"] = False
+    result, _, _ = ivr_config(["arnes", "pcss"], config=config)
+    assert result["widen"] is False
 
 
 def test_the_room_screen_of_this_gateway_is_asked():

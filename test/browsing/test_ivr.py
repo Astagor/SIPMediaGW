@@ -55,8 +55,9 @@ def ivr(monkeypatch):
 
 def scripted_driver(browsing=None, room=None, limit=200):
     """
-    A driver whose page reports browsing and room as the IVR page does. It
-    answers at most limit times, so that a broken loop fails instead of hanging.
+    A driver whose page reports browsing and room as the IVR page does: the
+    platform keeps its last value, as window.browsing does. It answers at most
+    limit times, so that a broken loop fails instead of hanging.
     """
     driver = MagicMock()
     browsing = list(browsing or [])
@@ -68,7 +69,7 @@ def scripted_driver(browsing=None, room=None, limit=200):
         if len(calls) > limit:
             raise AssertionError("the IVR page was polled too often")
         if script == "return window.browsing":
-            return browsing.pop(0) if browsing else None
+            return browsing.pop(0) if len(browsing) > 1 else (browsing[0] if browsing else None)
         if script == "return window.room":
             return room.pop(0) if room else None
         return None
@@ -212,6 +213,15 @@ class TestPrompt:
         menu = os.path.join(os.path.dirname(__file__), "../../browsing/assets/IVR/menu.js")
         with open(menu, encoding="utf-8") as f:
             assert ivr.driver.execute_script.call_args_list[0].args[0] == f.read()
+
+    def test_a_platform_chosen_again_is_the_one_returned(self, ivr, capsys):
+        # 0 # on the room step sends the page back to the list (window.browsing empty).
+        room = {"roomName": "lecture1"}
+        ivr.driver = scripted_driver(browsing=[None, "pcss", "pcss", None, "dev"], room=[None, None, room])
+        with patch.object(ivr, "readPairingCode"):
+            assert ivr.prompt() == ("dev", room)
+        lines = [l for l in capsys.readouterr().out.splitlines() if l.startswith("IVR: browsing:")]
+        assert lines == ["IVR: browsing: pcss", "IVR: browsing: ", "IVR: browsing: dev"]
 
     def test_forwards_keys_while_waiting(self, ivr):
         room = {"roomName": "lecture1"}

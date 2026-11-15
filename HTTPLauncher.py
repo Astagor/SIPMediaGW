@@ -384,14 +384,20 @@ class DockerGateway:
         # The room screen may show a group of the platforms (from the SIP address): the
         # phone gets the same ones, in the same order, so that their numbers match.
         shown = self.shownDomainKeys(gwName)
+        widen = False
         if shown and isinstance(webrtcDomains, dict):
+            # 0 # on the room screen leads to the listed platforms that the group leaves out.
+            listed = [key for key, val in webrtcDomains.items()
+                      if not (isinstance(val, dict) and val.get('listed') is False)]
+            widen = any(key not in shown for key in listed)
             webrtcDomains = {key: webrtcDomains[key] for key in shown if key in webrtcDomains}
 
         return {
             "status": "success",
             "menus": menus,
             "webrtc_domains": webrtcDomains,
-            "room_name_info": roomNameInfo
+            "room_name_info": roomNameInfo,
+            "widen": widen
         }
 
     def shownDomainKeys(self, gwName: str):

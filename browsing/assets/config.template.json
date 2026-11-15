@@ -57,10 +57,12 @@
                        "fr": "ma-reunion-1234" }
     },
     "edumeet": {
-      "hint": { "en": "Edumeet conference name",
-                "fr": "Nom de la visioconférence Edumeet" },
-      "placeholder": { "en": "my-meeting-1234",
-                       "fr": "ma-reunion-1234" }
+      "label": { "en": "Room name",
+                 "fr": "Nom de la salle" },
+      "hint": { "en": "The end of the meeting link: {domain}/a-room is the room a-room",
+                "fr": "La fin du lien de la réunion : {domain}/a-room est la salle a-room" },
+      "placeholder": { "en": "a-room",
+                       "fr": "a-room" }
     }
   },
   "menus": {
@@ -452,13 +454,13 @@
   "lang": "${IVR_LANG}",
   "ivr_prompts": {
     "fr": {
-      "domain": "Veuillez entrer le numéro de la plateforme suivi de #<br>(utilisez * pour corriger)",
-      "room": "Veuillez entrer le numéro de votre conférence suivi de #<br>(utilisez * pour corriger)",
+      "domain": "Choisissez la plateforme sur votre téléphone (QR code)<br>ou entrez son numéro, puis #",
+      "room": "Saisissez le nom de la salle sur votre téléphone<br><span class=\"sub\">Scannez le QR code, ou ouvrez le lien sous celui-ci et entrez le code</span>",
       "password": "Veuillez entrer le mot de passe suivi de #<br>(utilisez * pour corriger)"
     },
     "en": {
-      "domain": "Please enter the platform number followed by #<br>(use * to correct)",
-      "room": "Please enter your conference number followed by #<br>(use * to correct)",
+      "domain": "Choose the platform on your phone (QR code)<br>or enter its number, then #",
+      "room": "Type the room name on your phone<br><span class=\"sub\">Scan the QR code, or open the link under it and enter the code</span>",
       "password": "Please enter the password followed by #<br>(use * to correct)"
     }
   }
