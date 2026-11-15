@@ -15,6 +15,9 @@ const BRAND = {
   // The language of the pages until the visitor chooses one: 'fr' or 'en'.
   // Unset, the pairing page follows the browser and the portal starts in French.
   // lang: 'en',
+
+  // false: the pages stay in that language, and the language switch is hidden.
+  // langSwitch: false,
 };
 
 document.title = BRAND.name;
