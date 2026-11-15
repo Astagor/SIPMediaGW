@@ -338,7 +338,8 @@ class EduMeet extends UIHelper {
             media,
             panels: this.panelState(),
             screenShare: this.screenShareState(),
-            dualScreen: false
+            dualScreen: false,
+            reactions: Object.keys(REACTIONS)
         };
     }
 

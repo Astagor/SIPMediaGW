@@ -822,13 +822,17 @@ const CTRL_OPTIONAL = ['dual_screen_icon'];
 // as plain buttons below the chat row.
 const CTRL_COMMON = Object.keys(CTRL_STATE).filter((icon) => !CTRL_OPTIONAL.includes(icon));
 
-// The same four the room tablet offers, out of the eight the connector knows.
-const REACTIONS = [
-  ['thumbs-up', '\u{1F44D}'],
-  ['clapping-hands', '\u{1F44F}'],
-  ['red-heart', '\u2764\uFE0F'],
-  ['face-with-tears-of-joy', '\u{1F602}'],
-];
+const REACTION_GLYPHS = {
+  'thumbs-up': '\u{1F44D}',
+  'clapping-hands': '\u{1F44F}',
+  'red-heart': '\u2764\uFE0F',
+  'party-popper': '\u{1F389}',
+  'face-with-tears-of-joy': '\u{1F602}',
+};
+
+// The same four the room tablet offers, out of the eight the connector knows,
+// unless the connector names its own in its state (uiState.reactions).
+const REACTIONS = ['thumbs-up', 'clapping-hands', 'red-heart', 'face-with-tears-of-joy'];
 
 // The conference the gateway has joined, as the status poll reports it.
 let currentRoom = '';
@@ -984,11 +988,12 @@ async function renderMenuOptions() {
   const reactionRow = $('reactions');
   reactionRow.hidden = !ctrlState;
   if (ctrlState && !reactionRow.childElementCount) {
-    for (const [name, glyph] of REACTIONS) {
+    const names = Array.isArray(ctrlState.reactions) ? ctrlState.reactions : REACTIONS;
+    for (const name of names.filter((n) => REACTION_GLYPHS[n])) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'reaction';
-      btn.textContent = glyph;
+      btn.textContent = REACTION_GLYPHS[name];
       btn.setAttribute('aria-label', name);
       btn.onclick = () => sendCommand('reaction', name, {
         startPolling: false,
