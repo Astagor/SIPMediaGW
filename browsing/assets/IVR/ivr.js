@@ -65,7 +65,8 @@ function initIVR(config) {
     // the room step back to the choice of the platform. The branding may rename it.
     const allName = brand.allPlatforms || messages[lang].allPlatforms;
     const keypadEnter = (brand.keypad || {})[lang] || messages[lang].keypadEnter;
-    const PAGE_SIZE = 20;
+    // A list longer than a page of the room screen is shown page by page; the numbers stay
+    // the same on every page. The style sheet sets the page size with its columns.
     let page = 0;
 
     let inputDigits = [];
@@ -161,8 +162,18 @@ function initIVR(config) {
         return groupHidesSome() || Object.keys(listed).length > 1;
     }
 
+    // A platform number has as many digits as the highest platform id. One more key
+    // starts a new number instead of adding to the previous one.
+    function platformDigits() {
+        return String(Object.keys(domains).length).length;
+    }
+
+    function pageSize() {
+        return parseInt(getComputedStyle(domainsEl).getPropertyValue('--page-size'), 10) || 20;
+    }
+
     function pageCount() {
-        return Math.ceil(Object.keys(domains).length / PAGE_SIZE);
+        return Math.ceil(Object.keys(domains).length / pageSize());
     }
 
     function pageLine() {
@@ -185,14 +196,30 @@ function initIVR(config) {
         return el;
     }
 
+    function showPages(visible) {
+        const pages = document.getElementById("pages");
+        if (pages) pages.hidden = !visible;
+    }
+
+    function hideDomainList() {
+        showPages(false);
+        domainsEl.innerHTML = '';
+        domainsEl.classList.add("hidden");
+        // The list kept the height of its first page: release it, otherwise the
+        // room prompt is separated from the input by an empty area.
+        domainsEl.style.minHeight = '';
+        domainsEl.style.display = "none";
+    }
+
     function renderDomains() {
+        const size = pageSize();
         const all = Object.values(domains);
-        const shown = pageCount() > 1 ? all.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : all;
+        const shown = pageCount() > 1 ? all.slice(page * size, (page + 1) * size) : all;
         domainsEl.innerHTML = shown.map(d => domainItem(d.id, d.name, d.browsing, '')).join('') +
             (groupHidesSome() ? domainItem(0, allName, '', ' domain-all') : '');
         const pages = pageLine();
         pages.textContent = pageCount() > 1 ? messages[lang].pages(page + 1, pageCount()) : '';
-        pages.hidden = pageCount() <= 1;
+        showPages(pageCount() > 1);
         // Every page keeps the height of the first one: the screen does not jump.
         domainsEl.style.minHeight = '';
         if (pageCount() > 1 && page === 0) domainsEl.dataset.pageHeight = domainsEl.offsetHeight;
@@ -202,16 +229,16 @@ function initIVR(config) {
     function showPrompt() {
         if (stage === "domain" && (Object.keys(domains).length > 1 || groupHidesSome())) {
             messageEl.innerHTML = prompts[lang].domain;
+            // 0 # comes back to the list after the room step has hidden it.
+            domainsEl.style.display = '';
             domainsEl.classList.remove("hidden");
             keypadLine().hidden = true;
             renderDomains();
             playPromptAudio("platform", lang);
         } else {
+            hideDomainList();
             if (messageEl.innerHTML === prompts[lang].room) return;
             messageEl.innerHTML = prompts[lang].room;
-            domainsEl.innerHTML = '';
-            domainsEl.classList.add("hidden");
-            pageLine().hidden = true;
             const keypad = keypadLine();
             keypad.textContent = messages[lang].keypad(keypadEnter, canGoToFullList() ? allName : '');
             keypad.hidden = false;
@@ -252,8 +279,11 @@ function initIVR(config) {
     function handleInput(char) {
         activateDigitsHalo()
         if (/^[a-zA-Z0-9-_/-_.]$/.test(char)) {
-            if (stage === "domain") inputDigits = Object.keys(domains).length > 9 ? [...inputDigits, char] : [char];
-            else inputDigits.push(char);
+            if (stage === "domain") {
+                inputDigits = inputDigits.length >= platformDigits() ? [char] : [...inputDigits, char];
+            } else {
+                inputDigits.push(char);
+            }
         } else if (char === '*') {
             // With nothing typed, * on a list of several pages shows the page before.
             if (stage === "domain" && !inputDigits.length && pageCount() > 1) {
@@ -262,6 +292,7 @@ function initIVR(config) {
             }
             inputDigits.pop();
         } else if (char === '#') {
+            // With nothing typed, # on a list of several pages shows the next page.
             if (stage === "domain" && !inputDigits.length && pageCount() > 1) {
                 page = (page + 1) % pageCount();
                 renderDomains();
@@ -284,6 +315,7 @@ function initIVR(config) {
                     window.browsing = selectedDomain.key;
                     inputDigits = [];
                     stage = "room";
+                    hideDomainList();
                     updateDisplay();
                     if (stage === "room") digitsEl.classList.add("room-mode");
                     if (pendingRoomId) {

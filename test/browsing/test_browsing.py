@@ -339,12 +339,13 @@ def test_no_key_no_script():
 
 
 @pytest.mark.parametrize("key, shared", [("1", False), ("s", True), ("q", False)])
-def test_a_key_goes_to_the_connector(key, shared):
+def test_a_key_goes_to_the_menu_or_the_meeting_page(key, shared):
     session = with_driver(new_session())
     session.screenShared = key == "q"
     session.userInputs.put(key)
     session.interact()
-    assert scripts(session) == [f"if(window.meeting){{window.meeting.interact('{key}');}}"]
+    assert scripts(session) == [(f"if(window.menu){{window.menu.interact('{key}');}}"
+                                 f"else if(window.meeting){{window.meeting.interact('{key}');}}")]
     assert session.screenShared is shared
 
 
