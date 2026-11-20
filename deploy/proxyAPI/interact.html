@@ -82,6 +82,24 @@
     </button>
   </section>
 
+  <section id="screen-token" hidden>
+    <p class="chosen">
+      <span class="chosen__name" id="token-platform"></span>
+      <span class="chosen__room" id="token-room"></span>
+    </p>
+    <p class="waiting" id="token-message" aria-live="polite"></p>
+    <div class="field">
+      <label class="field__label" for="token-input" id="token-label"></label>
+      <input id="token-input" autocomplete="off" autocapitalize="characters"
+             autocorrect="off" spellcheck="false" inputmode="text">
+      <p class="field__hint" id="token-hint"></p>
+    </div>
+    <button type="button" class="submit" id="btn-token" disabled>
+      <span class="spinner" id="token-spinner" hidden aria-hidden="true"></span>
+      <span id="btn-token-label"></span>
+    </button>
+  </section>
+
   <!-- Leaving is available on every screen, but as a secondary action at the
        foot of the page: reaching the wrong room is worth correcting, it is not
        what the visitor came to do. -->

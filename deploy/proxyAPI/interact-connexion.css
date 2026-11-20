@@ -164,6 +164,8 @@
   letter-spacing: .06em;
 }
 .field input:focus { outline: 2px solid var(--bf); outline-offset: 2px; }
+.field__hint--error { color: var(--warning-txt); }
+#screen-token .waiting { margin-bottom: 1rem; }
 .field input::placeholder { color: var(--muted); letter-spacing: normal; }
 
 

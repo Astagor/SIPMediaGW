@@ -98,7 +98,7 @@ def joined_session(slides_shown):
     session.iconB64 = session.dtmfB64 = ""
     session.menuIcons = {}
     driver = MagicMock()
-    driver.execute_script.side_effect = lambda script, *args: script == "return window.meeting.joined"
+    driver.execute_script.side_effect = lambda script, *args: "joined" if script == browsing_module.JOIN_STATE else False
 
     def leave():
         session.room = {}

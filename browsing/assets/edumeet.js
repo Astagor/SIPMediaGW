@@ -42,7 +42,7 @@ class EduMeet extends UIHelper {
         this.displayName = displayName;
         this.lang = lang;
         this.token = token;
-        this.audioOnly = audioOnly;
+        this.audioOnly = audioOnly === "true";
         this.joined = false;
     }
 
@@ -104,6 +104,13 @@ class EduMeet extends UIHelper {
             this._setValue(nameInput, this.displayName);
             console.log('[✓] Name field filled');
             if (this.audioOnly) this._setToggle('webcam', false);
+            const tokenField = this._control('meeting-token');
+            if (tokenField) {
+                // Below the device choices on a 720p screen: brought into view, so the room sees what is missing.
+                tokenField.scrollIntoView({ block: 'center' });
+                console.log('[INFO] The room asks for its meeting token: waiting for it from the control page');
+                return;
+            }
             console.log('[INFO] Clicking JOIN...');
             if (!await this._clickJoinUntilInMeeting(120000)) {
                 console.error('[✗] Not in the meeting after JOIN retries');
@@ -331,7 +338,38 @@ class EduMeet extends UIHelper {
 
     // Null on a client without data-edumeet-* attributes: the control page then
     // offers its plain keys, as for a connector that reports no state.
+    // A meetings-only room refuses a join without its meeting token: eduMEET then reloads its
+    // page and shows the token field, empty, or holding the token it refused.
+    meetingTokenState() {
+        const field = this._control('meeting-token');
+        if (!field || this._inMeeting()) return null;
+        if (this.tokenSent) return 'checking';
+        return field.value ? 'invalid' : 'required';
+    }
+
+    // What the page waits for from the room, to be given on the control page.
+    get awaitingInput() {
+        return this.meetingTokenState() ? 'meetingToken' : null;
+    }
+
+    // Not awaited by the caller: a refused token reloads the page before any answer.
+    meetingToken(token) {
+        const field = this._control('meeting-token');
+        if (!field || !this._control('join')) return false;
+        this._setValue(field, token);
+        this.tokenSent = true;
+        this._clickJoinUntilInMeeting(120000).then((inMeeting) => {
+            if (!inMeeting) return;
+            this.blockerFocus();
+            this.joined = true;
+            console.log('[✓] Joined the meeting with its meeting token');
+        });
+        return true;
+    }
+
     uiState() {
+        const meetingToken = this.meetingTokenState();
+        if (meetingToken) return { meetingToken };
         const media = this.mediaState();
         if (!media) return null;
         return {

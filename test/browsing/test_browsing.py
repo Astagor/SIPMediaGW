@@ -374,7 +374,8 @@ def running(session, joined=(False, True), loops=1):
     session.readPairingCode = read_pairing_code
     answers = list(joined)
     driver = MagicMock()
-    driver.execute_script.side_effect = lambda script, *args: answers.pop(0) if script == "return window.meeting.joined" else None
+    driver.execute_script.side_effect = lambda script, *args: (
+        ("joined" if answers.pop(0) else None) if script == browsing_module.JOIN_STATE else None)
     return steps, pairings, driver
 
 
@@ -418,6 +419,102 @@ def test_the_session_waits_for_the_join_before_it_watches_the_meeting():
     run_session(session, driver)
     names = [c[0] for c in steps.method_calls]
     assert names[:6] == ["loadPage", "join", "interact", "interact", "interact", "monitorLeftMeeting"]
+
+
+# The wait for the join: a reloaded page, a page that waits for the room, the timeout
+
+def waiting(session, states, qr_loaded=(False,), clock=None, monkeypatch=None):
+    """Answers the join poll with states, in order; the rest of the session is replaced."""
+    for name in ("join", "interact", "loadJS", "readPairingCode", "hangUp"):
+        setattr(session, name, MagicMock())
+    answers = list(states)
+    qr = list(qr_loaded)
+
+    def execute(script, *args):
+        if script == browsing_module.JOIN_STATE:
+            state = answers.pop(0)
+            if isinstance(state, Exception):
+                raise state
+            return state
+        if "updateQrCode" in script:
+            return qr.pop(0) if len(qr) > 1 else qr[0]
+        return None
+    with_driver(session, execute)
+    if clock is not None:
+        ticks = iter(clock)
+        monkeypatch.setattr(browsing_module.time, "time", lambda: next(ticks))
+    return session
+
+
+def test_the_wait_ends_once_the_page_has_joined():
+    session = waiting(new_session(), [None, None, "joined"])
+    assert session.waitJoined() is True
+    assert session.interact.call_count == 2
+    session.join.assert_not_called()
+    session.hangUp.assert_not_called()
+
+
+def test_a_reloaded_page_is_joined_again():
+    session = waiting(new_session(), [None, "reloaded", None, "joined"])
+    assert session.waitJoined() is True
+    session.join.assert_called_once_with()
+
+
+def test_a_page_that_keeps_reloading_ends_the_call():
+    session = waiting(new_session(), ["reloaded"] * (browsing_module.MAX_RELOADS + 1))
+    assert session.waitJoined() is False
+    assert session.join.call_count == browsing_module.MAX_RELOADS
+    session.hangUp.assert_called_once_with()
+
+
+def test_a_page_that_is_loading_is_not_taken_for_a_reload():
+    error = browsing_module.WebDriverException("document unloaded")
+    session = waiting(new_session(), [error, "joined"])
+    assert session.waitJoined() is True
+    session.join.assert_not_called()
+
+
+def test_a_page_waiting_for_the_room_shows_the_pairing_code(monkeypatch):
+    session = waiting(new_session(), ["meetingToken"] * 3 + ["joined"], qr_loaded=(False, True),
+                      clock=[0, 1, 2, 3], monkeypatch=monkeypatch)
+    assert session.waitJoined() is True
+    assert session.readPairingCode.call_count == 3
+    session.loadJS.assert_called_once()
+    assert os.path.normpath(session.loadJS.call_args.args[0]) == os.path.join(ASSETS, "IVR", "menu.js")
+    session.hangUp.assert_not_called()
+
+
+def test_the_pairing_code_is_refreshed_once_a_second(monkeypatch):
+    session = waiting(new_session(), ["meetingToken"] * 4 + ["joined"], qr_loaded=(True,),
+                      clock=[0, 0.3, 0.6, 1.2], monkeypatch=monkeypatch)
+    assert session.waitJoined() is True
+    assert session.readPairingCode.call_count == 2
+
+
+def test_nothing_given_before_the_timeout_ends_the_call(monkeypatch):
+    monkeypatch.setenv("IVR_TIMEOUT", "60")
+    session = waiting(new_session(), ["meetingToken"] * 4, qr_loaded=(True,),
+                      clock=[0, 30, 59, 61], monkeypatch=monkeypatch)
+    assert session.waitJoined() is False
+    session.hangUp.assert_called_once_with()
+
+
+def test_the_timeout_counts_from_the_last_time_the_page_asked(monkeypatch):
+    monkeypatch.setenv("IVR_TIMEOUT", "60")
+    session = waiting(new_session(), ["meetingToken", None, "meetingToken", "meetingToken", "joined"],
+                      qr_loaded=(True,), clock=[0, 50, 100], monkeypatch=monkeypatch)
+    assert session.waitJoined() is True
+    session.hangUp.assert_not_called()
+
+
+def test_a_session_that_never_joins_does_not_show_the_menu():
+    session = new_session()
+    steps, pairings, driver = running(session)
+    session.waitJoined = MagicMock(return_value=False)
+    run_session(session, driver)
+    names = [c[0] for c in steps.method_calls]
+    assert names == ["loadPage", "join"]
+    assert pairings == []
 
 
 @pytest.mark.parametrize("timeout, expected", [(None, []), ("120", [call(120, checkInterval=60)])])

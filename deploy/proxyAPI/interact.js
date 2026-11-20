@@ -164,6 +164,7 @@ function renderLangSwitch() {
   // The command labels come from config.json and are set when drawn: without
   // this they would stay in whichever language the screen was built in.
   if (menuDisplayed) renderMenuOptions();
+  if (!$('screen-token').hidden) paintToken();
 }
 
 // Which of the two connection screens is up, or neither once in the meeting.
@@ -173,6 +174,7 @@ function renderLangSwitch() {
 function showScreen(name) {
   $('screen-platforms').hidden = (name !== 'platforms');
   $('screen-meeting').hidden = (name !== 'meeting');
+  $('screen-token').hidden = (name !== 'token');
   $('screen-controls').hidden = (name !== null);
 
   // Renaming stops at the door of the conference: displayName goes into the
@@ -316,15 +318,104 @@ updateRoomNameInputUi();
 // once, it read as lost while the gateway was still joining.
 async function joinRoom() {
   if (!capture.value || $('btn-enter').disabled) return;
+  let room = capture.value.trim();
+  // An invitation link gives the room, and the meeting token for a meetings-only room.
+  const link = invitationLink(room);
+  if (link) {
+    const domain = ((webrtcDomains[browsingName] || {}).domain || '').toLowerCase();
+    if (domain && link.host !== domain) {
+      const hint = $('room-name-hint');
+      hint.textContent = TEXTS[currentLang].linkOtherPlatform(link.host);
+      hint.classList.add('field__hint--error');
+      hint.style.display = 'block';
+      return;
+    }
+    room = link.room;
+    pendingToken = link.token;
+  }
   $('spinner').hidden = false;
   $('btn-enter').disabled = true;
-  await sendRoomName(capture.value);
+  await sendRoomName(room);
   setTimeout(() => sendKey('#'), 450);
 }
+
+function invitationLink(value) {
+  let url;
+  try { url = new URL(value); } catch (e) { return null; }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+  const path = url.pathname.split('/').filter(Boolean);
+  if (path.length !== 1) return null;
+  return { host: url.host.toLowerCase(), room: decodeURIComponent(path[0]),
+           token: tokenFromInput(url.searchParams.get('meetingToken') || '') };
+}
+
+// A meeting token as typed, or taken from a pasted invitation link.
+function tokenFromInput(value) {
+  const text = String(value || '').trim();
+  const marker = text.indexOf('meetingToken=');
+  const raw = marker >= 0 ? text.slice(marker + 'meetingToken='.length).split('&')[0] : text;
+  const token = raw.toUpperCase();
+  return /^[A-Z0-9]{1,64}$/.test(token) ? token : '';
+}
+
+let pendingToken = '';
+let tokenReason = null;
+let tokenRefusal = 'required';
+let tokenFlow = false;
+
+function showTokenScreen(reason) {
+  const first = $('screen-token').hidden;
+  tokenFlow = true;
+  tokenReason = reason;
+  if (reason !== 'checking') tokenRefusal = reason;
+  showScreen('token');
+  const val = webrtcDomains[browsingName] || {};
+  $('token-platform').textContent = (val.name || browsingName || '').replace(/\s*\(.*\)$/, '').trim();
+  $('token-room').textContent = currentRoom || '';
+  if (reason === 'required' && pendingToken) {
+    const token = pendingToken;
+    pendingToken = '';
+    submitToken(token);
+    return;
+  }
+  paintToken();
+  if (first) $('token-input').focus();
+}
+
+function paintToken() {
+  const t = TEXTS[currentLang];
+  $('token-label').textContent = t.tokenLabel;
+  $('token-hint').textContent = t.tokenHint;
+  $('btn-token-label').textContent = t.join;
+  $('token-message').textContent = tokenRefusal === 'invalid' ? t.tokenInvalid : t.tokenRequired;
+  const checking = tokenReason === 'checking';
+  $('token-spinner').hidden = !checking;
+  $('token-input').disabled = checking;
+  $('btn-token').disabled = checking || !tokenFromInput($('token-input').value);
+}
+
+function submitToken(token) {
+  if (!token) return;
+  tokenReason = 'checking';
+  paintToken();
+  sendCommand('meetingToken', token, { startPolling: false });
+}
+
+$('token-input').addEventListener('input', paintToken);
+$('token-input').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  if (!$('btn-token').disabled) submitToken(tokenFromInput($('token-input').value));
+});
+$('btn-token').onclick = () => submitToken(tokenFromInput($('token-input').value));
 
 
 capture.addEventListener('input', function() {
   this.placeholder = this.value ? '' : getRoomNamePlaceholder();
+  if ($('room-name-hint').classList.contains('field__hint--error')) {
+    $('room-name-hint').classList.remove('field__hint--error');
+    updateRoomNameInputUi();
+  }
 });
 capture.addEventListener('keydown', async function(e) {
   if (e.key === 'Enter') {
@@ -863,6 +954,13 @@ function paintDualAvailability() {
 async function syncCtrlState(force = false) {
   if (!force && Date.now() < ctrlHoldUntil) return;
   const ui = await fetchCtrlState();
+  // The join page shows switches too: a token refused after they were drawn ends up here.
+  if (ui && ui.meetingToken) {
+    menuDisplayed = false;
+    showTokenScreen(ui.meetingToken);
+    setTimeout(renderMenuOptions, POLL_MS);
+    return;
+  }
   if (ui) {
     shareSeen = typeof ui.screenShare === 'boolean' ? ui.screenShare : null;
     paintCapture();
@@ -929,6 +1027,18 @@ async function renderMenuOptions() {
   // two seconds. A started gateway that still reports nothing is one whose
   // connector has no uiState: the second empty read is taken as the answer.
   ctrlState = await fetchCtrlState();
+  if (ctrlState && ctrlState.meetingToken) {
+    showTokenScreen(ctrlState.meetingToken);
+    ctrlState = null;
+    menuDisplayed = false;
+    return setTimeout(renderMenuOptions, POLL_MS);
+  }
+  // A refused token reloads the meeting page, which reports nothing for that beat.
+  if (!ctrlState && tokenFlow) {
+    menuDisplayed = false;
+    return setTimeout(renderMenuOptions, POLL_MS);
+  }
+  tokenFlow = false;
   if (ctrlState) shareSeen = typeof ctrlState.screenShare === 'boolean' ? ctrlState.screenShare : null;
   if (!ctrlState && !ctrlOnceBlind) {
     // Nothing is drawn yet, and menuDisplayed is left false so the next poll

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import os
+import re
 import subprocess
 import json
 import argparse
@@ -600,6 +601,17 @@ class DockerGateway:
                 )
                 res["displayName"] = name
             return res
+        elif payload['command'] == 'meetingToken':
+            token = str(payload.get('param1') or '').strip()
+            ok = False
+            if re.fullmatch(r'[A-Za-z0-9]{1,64}', token):
+                ok = self.executeInExistingChromeSession(
+                    gwId,
+                    "return (window.meeting && window.meeting.meetingToken) ? "
+                    "window.meeting.meetingToken(arguments[0]) : false;",
+                    token
+                )
+            return {"ack": True, "ok": bool(ok)}
         elif payload['command'] == 'roomName':
             # safe read of optional param1
             default = payload.get('param1', None)

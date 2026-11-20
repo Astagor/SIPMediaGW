@@ -826,6 +826,26 @@ class TestSendCommandConnector:
             gw.sendCommand("my-gw", {"command": command, "param1": "maybe"})
         execute.assert_not_called()
 
+    def test_meeting_token_goes_to_the_connector(self, connector_gw):
+        gw, execute, _ = connector_gw
+        execute.return_value = True
+        assert gw.sendCommand("my-gw", {"command": "meetingToken", "param1": " k7m2qx9ht4wp "}) == {"ack": True, "ok": True}
+        gw_id, script, token = execute.call_args.args
+        assert gw_id == "3"
+        assert "window.meeting.meetingToken(arguments[0])" in script
+        assert token == "k7m2qx9ht4wp"
+
+    @pytest.mark.parametrize("token", ["", None, "K7M2 QX9H", "K7M2');alert(1)//", "A" * 65])
+    def test_meeting_token_letters_and_digits_only(self, connector_gw, token):
+        gw, execute, _ = connector_gw
+        assert gw.sendCommand("my-gw", {"command": "meetingToken", "param1": token}) == {"ack": True, "ok": False}
+        execute.assert_not_called()
+
+    def test_meeting_token_refused_by_the_page(self, connector_gw):
+        gw, execute, _ = connector_gw
+        execute.return_value = False
+        assert gw.sendCommand("my-gw", {"command": "meetingToken", "param1": "K7M2QX9HT4WP"}) == {"ack": True, "ok": False}
+
     def test_display_name_is_set_in_the_url(self, connector_gw):
         gw, execute, _ = connector_gw
         assert gw.sendCommand("my-gw", {"command": "displayName", "param1": "Room 2.14"}) == {"ack": True}

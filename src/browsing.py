@@ -12,6 +12,12 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 import rtcstatsTrace
 
+MAX_RELOADS = 20
+JOIN_STATE = ("if (!window.meeting) return 'reloaded';"
+              "if (window.meeting.joined) return 'joined';"
+              "return window.meeting.awaitingInput || null;")
+
+
 class Browsing:
     def __init__(self, width, height, config,
                  modName=None, room=None, name=None,
@@ -237,6 +243,63 @@ class Browsing:
     def unset(self):
         pass
 
+    # A page that reloads before the join is driven again: eduMEET reloads when a meetings-only
+    # room refuses the join without its meeting token. While the page waits for something that
+    # only the control page can give, the room screen shows the pairing code, and the call ends
+    # when nothing comes before IVR_TIMEOUT (5 minutes when unset).
+    def waitJoined(self):
+        timeout = int(os.getenv('IVR_TIMEOUT') or 300)
+        reloads = 0
+        awaitingSince = None
+        lastShown = None
+        while True:
+            try:
+                state = self.driver.execute_script(JOIN_STATE)
+            except WebDriverException:
+                state = None
+            if state == 'joined':
+                return True
+            if state == 'reloaded':
+                if reloads >= MAX_RELOADS:
+                    print("The meeting page keeps reloading, hanging up.", flush=True)
+                    self.hangUp()
+                    return False
+                try:
+                    self.join()
+                    reloads += 1
+                except WebDriverException:
+                    time.sleep(0.5)
+                continue
+            if state:
+                now = time.time()
+                if awaitingSince is None:
+                    awaitingSince = now
+                    print(f"The meeting page waits for: {state}", flush=True)
+                if now - awaitingSince > timeout:
+                    print(f"Nothing given for {state} before the timeout, hanging up.", flush=True)
+                    self.hangUp()
+                    return False
+                if lastShown is None or now - lastShown >= 1:
+                    lastShown = now
+                    self.showPairingCode()
+            else:
+                awaitingSince = None
+            self.interact()
+
+    def showPairingCode(self):
+        if not self.readPairingCode:
+            return
+        try:
+            if not self.driver.execute_script("return typeof window.updateQrCode === 'function'"):
+                self.loadJS(os.path.join(os.path.dirname(os.path.normpath(__file__)),
+                                         '../browsing/assets/IVR/menu.js'))
+            self.readPairingCode(self.driver)
+        except WebDriverException:
+            pass
+
+    def hangUp(self):
+        subprocess.run(['echo "/hangup" | netcat -q 1 127.0.0.1 5555'], shell=True, check=False)
+
     def run(self):
         try:
             # Before Chrome starts: the trace must wrap WebRTC before the meeting scripts run.
@@ -250,11 +313,8 @@ class Browsing:
             )
             self.loadPage()
             self.join()
-            while True:
-                joined = self.driver.execute_script("return window.meeting.joined")
-                if joined:
-                    break
-                self.interact()
+            if not self.waitJoined():
+                return
             self.joined = True
             if self.slidesShown():
                 self.userInputs.put('s')
