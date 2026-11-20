@@ -17,93 +17,6 @@ const POLL_MS = 2000;
 let lastScreen = null;
 let currentLang = 'en';
 
-// ---------------------------------------------------------------------------
-// Per-deployment settings, gathered here rather than spread through the markup.
-// The pairing page carries the same block.
-// ---------------------------------------------------------------------------
-const TEXTS = {
-  fr: {
-    title: 'Contrôler votre réunion',
-    pickPlatform: 'Choisissez la plateforme de votre réunion',
-    roomName: 'Nom dans la réunion :',
-    allPlatforms: 'Toutes les plateformes',
-    allPlatformsHost: 'toutes les instances',
-    roomUri: 'Adresse vidéo :',
-    connecting: 'connexion en cours…',
-    defaultRoom: 'Ma salle',
-    waiting: 'En attente de la connexion d\u2019un terminal de visioconf\u00e9rence.',
-    editName: 'Modifier le nom affich\u00e9 dans la conf\u00e9rence',
-    save: 'Valider',
-    cancel: 'Annuler',
-    chatPlaceholder: 'Envoyer un message au chat\u2026',
-    chatSend: 'Envoyer',
-    capture: 'Capturer',
-    captureHint: 'Prendre une image de l\u2019\u00e9cran partag\u00e9',
-    captureNone: 'Aucun contenu partag\u00e9 \u00e0 capturer pour le moment.',
-    captureWaiting: 'Aucun \u00e9cran partag\u00e9 pour le moment',
-    dualWaiting: 'Disponible pendant un partage d\u2019\u00e9cran',
-    captureFail: 'La capture a \u00e9chou\u00e9.',
-    slideTitle: 'Capture de l\u2019\u00e9cran partag\u00e9',
-    slideDownload: 'T\u00e9l\u00e9charger',
-    slideFullscreen: 'Plein \u00e9cran',
-    slideShrink: 'R\u00e9duire',
-    slideDiscard: 'Supprimer',
-    discardBody: 'Supprimer cette capture ?',
-    meetingLabel: 'Veuillez saisir l\u2019identifiant de la r\u00e9union',
-    meetingFallback: 'Entrez le nom de la réunion',
-    join: 'Rejoindre',
-    hangUp: 'Raccrocher',
-    confirmTitle: 'Confirmation',
-    confirmBody: 'Êtes-vous sûr de vouloir terminer l\u2019appel ?',
-    confirmNo: 'Annuler',
-    confirmYes: 'Raccrocher',
-    close: 'Fermer',
-    hangUpTitle: 'Mettre fin \u00e0 l\u2019appel',
-    themeToLight: 'Passer en thème clair',
-    themeToDark: 'Passer en thème sombre',
-  },
-  en: {
-    title: 'Control your meeting',
-    pickPlatform: 'Choose your meeting platform',
-    roomName: 'Name in the meeting:',
-    allPlatforms: 'All platforms',
-    allPlatformsHost: 'all instances',
-    roomUri: 'Video address:',
-    connecting: 'connecting…',
-    defaultRoom: 'My room',
-    waiting: 'Waiting for a room endpoint to call in.',
-    editName: 'Change the name shown in the conference',
-    save: 'Save',
-    cancel: 'Cancel',
-    chatPlaceholder: 'Send a message to chat\u2026',
-    chatSend: 'Send',
-    capture: 'Capture',
-    captureHint: 'Take a still of the shared screen',
-    captureNone: 'Nothing is being shared to capture right now.',
-    captureWaiting: 'No screen is being shared',
-    dualWaiting: 'Available while a screen is shared',
-    captureFail: 'The capture failed.',
-    slideTitle: 'Shared screen capture',
-    slideDownload: 'Download',
-    slideFullscreen: 'Full screen',
-    slideShrink: 'Shrink',
-    slideDiscard: 'Discard',
-    discardBody: 'Discard this capture?',
-    meetingLabel: 'Please enter the meeting id',
-    meetingFallback: 'Enter the meeting name',
-    join: 'Join',
-    hangUp: 'Hang up',
-    confirmTitle: 'Confirmation',
-    confirmBody: 'Are you sure you want to end the call?',
-    confirmNo: 'Cancel',
-    confirmYes: 'Hang up',
-    close: 'Close',
-    hangUpTitle: 'End the call',
-    themeToLight: 'Switch to light theme',
-    themeToDark: 'Switch to dark theme',
-  },
-};
-
 let dark = localStorage.getItem('theme')
   ? localStorage.getItem('theme') === 'dark'
   : window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -162,7 +75,7 @@ function getRoomNamePlaceholder() {
   const captureEl = $('key-capture');
   if (!captureEl) return '';
   const selectedInfo = browsingName && roomNameInfo[browsingModule(browsingName)] ? roomNameInfo[browsingModule(browsingName)] : null;
-  const lang = currentLang === 'fr' ? 'fr' : 'en';
+  const lang = currentLang;
   const fallback = TEXTS[lang].meetingFallback;
   return selectedInfo?.placeholder?.[lang] || selectedInfo?.placeholder?.en || fallback;
 }
@@ -173,7 +86,7 @@ function updateRoomNameInputUi() {
   if (!captureEl) return;
 
   const selectedInfo = browsingName && roomNameInfo[browsingModule(browsingName)] ? roomNameInfo[browsingModule(browsingName)] : null;
-  const lang = currentLang === 'fr' ? 'fr' : 'en';
+  const lang = currentLang;
   const placeholder = getRoomNamePlaceholder();
   // {domain} in a hint is the host of the platform chosen.
   const domain = (webrtcDomains[browsingName] && webrtcDomains[browsingName].domain) || '';
@@ -197,8 +110,7 @@ function renderLangSwitch() {
   document.documentElement.lang = currentLang;
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 
-  $('lang-fr').setAttribute('aria-checked', String(currentLang === 'fr'));
-  $('lang-en').setAttribute('aria-checked', String(currentLang === 'en'));
+  showLanguage(currentLang, TEXTS);
 
   const toggle = $('theme-toggle');
   toggle.textContent = dark ? '\u2600' : '\u263e';
@@ -515,7 +427,7 @@ async function fetchIvrConfigAndRestoreState() {
       bn ? showInputAndPrepareMenu(bn) : renderDomainButtons();
     }
   } catch(e) {
-    say('Error loading IVR config.');
+    say(TEXTS[currentLang].configError);
   } finally {
     clearTimeout(net);
     reveal();
@@ -679,9 +591,7 @@ function refreshJoin() {
 
 // stopped, deleted, or dropped by the proxy: nothing left to drive from here.
 function endOfCall() {
-  say(currentLang === 'fr'
-    ? 'L\u2019appel est termin\u00e9.'
-    : 'The call has ended.');
+  say(TEXTS[currentLang].callEnded);
   // a beat so the message is seen, then back to the pairing page
   setTimeout(() => { window.location.href = apiUrl('/pairing'); }, 800);
 }
@@ -722,9 +632,7 @@ async function checkGwStatus() {
     // A transient failure must not silence the page for good: it keeps
     // polling, more slowly, so a passing outage is recovered from.
     if (!statusRes.ok) {
-      say(currentLang === 'fr'
-        ? `Passerelle injoignable (code ${statusRes.status}), nouvelle tentative…`
-        : `Gateway unreachable (code ${statusRes.status}) — retrying…`);
+      say(TEXTS[currentLang].unreachable(statusRes.status));
       return setTimeout(checkGwStatus, POLL_MS * 5);
     }
     goneCount = 0;
@@ -786,9 +694,7 @@ async function checkGwStatus() {
       }
     }
   } catch(e) {
-    say(currentLang === 'fr'
-      ? 'Erreur de statut, nouvelle tentative…'
-      : 'Status error — retrying…');
+    say(TEXTS[currentLang].statusError);
     return setTimeout(checkGwStatus, POLL_MS * 5);
   }
   // A control touched on the room tablet moves the same state as one touched
@@ -831,27 +737,6 @@ const CTRL_SHAPE = {
 // and the hand carry none: grey against green, with the words beside them,
 // says enough.
 const CTRL_SLASHED = ['microphone_icon', 'camera_icon'];
-
-const CTRL_WORDS = {
-  fr: {
-    microphone_icon:   [['Micro coupé', 'Personne ne vous entend'], ['Micro actif', 'Vous êtes entendu']],
-    camera_icon:       [['Caméra coupée', 'Votre image n\u2019est pas diffusée'], ['Caméra active', 'Votre image est diffusée']],
-    chat_icon:         [['Chat masqué', 'Non affiché en salle'], ['Chat affiché', 'Visible sur l\u2019écran de la salle']],
-    hand_icon:         [['Main baissée', 'Vous ne demandez pas la parole'], ['Main levée', 'Vous demandez la parole']],
-    participants_icon: [['Participants masqués', 'Liste non affichée en salle'], ['Participants affichés', 'Liste visible sur l\u2019écran']],
-    info_icon:         [['Informations masquées', 'Non affichées en salle'], ['Informations affichées', 'Visibles sur l\u2019écran']],
-    dual_screen_icon:  [['Présentation dans l\u2019image', 'Le partage d\u2019écran est incrusté dans la vidéo'], ['Présentation séparée', 'Le partage d\u2019écran arrive à part dans la salle']],
-  },
-  en: {
-    microphone_icon:   [['Microphone off', 'Nobody can hear you'], ['Microphone on', 'You can be heard']],
-    camera_icon:       [['Camera off', 'Your picture is not sent'], ['Camera on', 'Your picture is being sent']],
-    chat_icon:         [['Chat hidden', 'Not shown in the room'], ['Chat shown', 'Visible on the room screen']],
-    hand_icon:         [['Hand down', 'You are not asking to speak'], ['Hand raised', 'You are asking to speak']],
-    participants_icon: [['Participants hidden', 'List not shown in the room'], ['Participants shown', 'List visible on the screen']],
-    info_icon:         [['Details hidden', 'Not shown in the room'], ['Details shown', 'Visible on the screen']],
-    dual_screen_icon:  [['Presentation in the picture', 'Screen sharing is embedded in the video'], ['Separate presentation', 'Screen sharing reaches the room on its own']],
-  },
-};
 
 // Writes a row's state into it: the class, the icon and the two lines. Called
 // when the row is built and again on every read-back.
@@ -1169,12 +1054,9 @@ function onReady(fn) {
 // Language and theme, wired like the pairing page's.
 function setLang(value) {
   currentLang = value;
-  localStorage.setItem('lang', value);
   renderLangSwitch();
 }
 
-$('lang-fr').addEventListener('click', () => setLang('fr'));
-$('lang-en').addEventListener('click', () => setLang('en'));
 $('theme-toggle').addEventListener('click', () => {
   dark = !dark;
   localStorage.setItem('theme', dark ? 'dark' : 'light');
@@ -1182,12 +1064,8 @@ $('theme-toggle').addEventListener('click', () => {
 });
 
 onReady(() => {
-  // BRAND.langSwitch false keeps the page in BRAND.lang, without the language switch.
-  const fixed = typeof BRAND !== 'undefined' && BRAND.langSwitch === false && TEXTS[BRAND.lang]
-    ? BRAND.lang : '';
-  const saved = fixed || localStorage.getItem('lang') || (typeof BRAND !== 'undefined' && BRAND.lang);
-  if (saved && TEXTS[saved]) currentLang = saved;
-  if (fixed) $('lang-fr').parentElement.hidden = true;
+  currentLang = pageLanguage(TEXTS);
+  setUpLanguageMenu(TEXTS, currentLang, setLang);
   renderLangSwitch();
   fetchIvrConfigAndRestoreState();
   // call after initial render to hide slide-controls when appropriate
@@ -1316,7 +1194,7 @@ function addSlideThumbnail(b64) {
   const img = document.createElement('img');
   img.className = 'slide-thumb';
   img.src = `data:image/png;base64,${b64}`;
-  img.alt = 'Slide thumbnail';
+  img.alt = TEXTS[currentLang].slideTitle;
   img.onclick = () => showSlidePreview(b64);
 
   const meta = document.createElement('div');
@@ -1364,9 +1242,6 @@ function updateFullscreenButtonLabel() {
   fsBtn.innerHTML = isFs ? ICON_SHRINK : ICON_EXPAND;
   fsBtn.setAttribute('aria-label', isFs ? t.slideShrink : t.slideFullscreen);
   fsBtn.dataset.tip = isFs ? t.slideShrink : t.slideFullscreen;
-  const unused = isFs
-    ? (currentLang === 'fr' ? 'Quitter' : 'Exit')
-    : (currentLang === 'fr' ? 'Agrandir' : 'Full screen');
 }
 
 async function toggleFullscreen() {

@@ -12,11 +12,11 @@ const BRAND = {
   docLabelFr: 'Présentation du service',
   docLabelEn: 'Service overview',
 
-  // The language of the pages until the visitor chooses one: 'fr' or 'en'.
-  // Unset, the pairing page follows the browser and the portal starts in French.
+  // The language of the pairing and control pages when the browser asks for none of the
+  // languages of lang.js (unset: English), and the portal's until the visitor chooses one.
   // lang: 'en',
 
-  // false: the pages stay in that language, and the language switch is hidden.
+  // false: the pages stay in that language, and the language menu is hidden.
   // langSwitch: false,
 };
 

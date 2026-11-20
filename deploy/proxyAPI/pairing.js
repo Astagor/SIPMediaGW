@@ -5,45 +5,6 @@
 // ---------------------------------------------------------------------------
 const CODE_LENGTH = 5;
 
-const TEXTS = {
-  fr: {
-    title: 'Contrôler votre réunion',
-    subtitle: "Saisissez le code affiché à l'écran",
-    button: 'Valider',
-    hintTitle: 'Où trouver le code ?',
-    hint: "Ce code à 5 caractères s'affiche sur l'écran de la salle, à côté du QR code.",
-    warningTitle: 'Le code change régulièrement.',
-    warning: "Vérifiez-le à l'écran juste avant de valider.",
-    sample: 'Exemple',
-    sampleFrom: 'Depuis votre téléphone',
-    close: 'Fermer ce message',
-    errorPrefix: 'Le code',
-    errorSuffix: 'est erroné ou expiré, veuillez réessayer.',
-    tooMany: 'Trop de tentatives. Patientez une minute avant de réessayer.',
-    themeToLight: 'Passer en thème clair',
-    themeToDark: 'Passer en thème sombre',
-    boxLabel: (i) => `Caractère ${i + 1} sur ${CODE_LENGTH}`,
-  },
-  en: {
-    title: 'Control your meeting',
-    subtitle: 'Enter the code shown on screen',
-    button: 'Submit',
-    hintTitle: 'Where to find the code?',
-    hint: 'This 5-character code is shown on the room screen, next to the QR code.',
-    warningTitle: 'The code changes regularly.',
-    warning: 'Check it on the screen just before submitting.',
-    sample: 'Example',
-    sampleFrom: 'From your phone',
-    close: 'Dismiss this message',
-    errorPrefix: 'Code',
-    errorSuffix: 'is invalid or expired, please try again.',
-    tooMany: 'Too many attempts. Wait a minute before trying again.',
-    themeToLight: 'Switch to light theme',
-    themeToDark: 'Switch to dark theme',
-    boxLabel: (i) => `Character ${i + 1} of ${CODE_LENGTH}`,
-  },
-};
-
 // The code the proxy turned down, quoted back in the error message. The boxes
 // are cleared rather than kept: a refused code is not worth correcting one
 // character at a time, re-reading it from the room screen is the point.
@@ -52,17 +13,7 @@ let rejectedCode = '';
 // Set when the proxy has had enough attempts from here for the moment.
 let waited = false;
 
-// When no language was chosen yet, use the service's (BRAND.lang), else fall back
-// to the browser's, so a visitor arriving straight here (from the room's QR code)
-// starts in their language.
-// BRAND.langSwitch false keeps the pages in BRAND.lang, without the language switch.
-const langFixed = typeof BRAND !== 'undefined' && BRAND.langSwitch === false && TEXTS[BRAND.lang]
-  ? BRAND.lang : '';
-let lang = langFixed
-  || localStorage.getItem('lang')
-  || (typeof BRAND !== 'undefined' && BRAND.lang)
-  || ((navigator.language || '').toLowerCase().indexOf('en') === 0 ? 'en' : 'fr');
-if (!TEXTS[lang]) lang = 'fr';
+let lang = pageLanguage(TEXTS);
 
 // The banner stays until it is closed rather than fading on a timer: it names
 // the code that was turned down, and the reader may need it while checking the
@@ -164,8 +115,7 @@ function render() {
   document.documentElement.lang = lang;
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
 
-  $('lang-fr').setAttribute('aria-checked', String(lang === 'fr'));
-  $('lang-en').setAttribute('aria-checked', String(lang === 'en'));
+  showLanguage(lang, TEXTS);
 
   const toggle = $('theme-toggle');
   toggle.textContent = dark ? '☀' : '☾';
@@ -182,7 +132,7 @@ function render() {
   $('sample-badge').textContent = t.sample;
   $('sample-from').textContent = t.sampleFrom;
 
-  boxes.forEach((box, i) => box.setAttribute('aria-label', t.boxLabel(i)));
+  boxes.forEach((box, i) => box.setAttribute('aria-label', t.boxLabel(i, CODE_LENGTH)));
 
   // The rejected code is named in the message: on a screen where five boxes
   // now sit empty, "this code" alone would leave the reader wondering which.
@@ -223,7 +173,6 @@ function render() {
 
 function setLang(value) {
   lang = value;
-  localStorage.setItem('lang', value);
   render();
 }
 
@@ -231,9 +180,7 @@ function setLang(value) {
 
 buildBoxes();
 
-$('lang-fr').addEventListener('click', () => setLang('fr'));
-$('lang-en').addEventListener('click', () => setLang('en'));
-if (langFixed) $('lang-fr').parentElement.hidden = true;
+setUpLanguageMenu(TEXTS, lang, setLang);
 // A click in the gaps between boxes lands on the strip itself; send it to the
 // first box still waiting for a character.
 $('code-boxes').addEventListener('mousedown', (e) => {

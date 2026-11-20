@@ -107,6 +107,37 @@ body {
   color: var(--bf);
   font-weight: 700;
 }
+/* The language menu: the code of the current language, with the native select laid over it,
+   invisible, so a phone opens its own picker. */
+.lang-pick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  color: var(--bf);
+  font-size: .85rem;
+  font-weight: 700;
+}
+.lang-pick svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+}
+.lang-pick select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.lang-pick:focus-within {
+  outline: 2px solid var(--bf);
+  outline-offset: 2px;
+}
 .theme-toggle {
   width: 2.1rem;
   height: 2.1rem;
@@ -309,9 +340,8 @@ h1 {
   font-weight: 400;
   line-height: 1.3;
   white-space: nowrap;
-  opacity: 0;
+  display: none;
   pointer-events: none;
-  transition: opacity .1s;
 }
 [data-tip]::before {
   content: "";
@@ -324,12 +354,13 @@ h1 {
   height: .5rem;
   background: var(--bg);
   box-shadow: -1px -1px 0 0 var(--border);
-  opacity: 0;
+  display: none;
   pointer-events: none;
-  transition: opacity .1s;
 }
+/* Shown only on hover or keyboard focus, and laid out only then: a hidden tooltip of a long
+   translation would still widen the page past a phone screen. */
 [data-tip]:hover::after, [data-tip]:hover::before,
-[data-tip]:focus-visible::after, [data-tip]:focus-visible::before { opacity: 1; }
+[data-tip]:focus-visible::after, [data-tip]:focus-visible::before { display: block; }
 
 /* Centred, a tooltip on an element near an edge runs off the page. Which edge
    depends on where the element lands, which depends on the text beside it, so

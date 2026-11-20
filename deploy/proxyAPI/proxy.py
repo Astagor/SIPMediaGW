@@ -157,11 +157,15 @@ async def portal_page(request: Request):
 # grants access and it is entered on one of them, while reaching a gateway
 # takes a gw_id the other carries in its query string.
 pairingStaticFiles = {"brand.js": "application/javascript",
+                      "lang.js": "application/javascript",
+                      "pairing-texts.js": "application/javascript",
                       "shared.css": "text/css",
                       "pairing.css": "text/css",
                       "pairing.js": "application/javascript"}
 
 interactStaticFiles = {"brand.js": "application/javascript",
+                       "lang.js": "application/javascript",
+                       "interact-texts.js": "application/javascript",
                        "shared.css": "text/css",
                        "interact-connexion.css": "text/css",
                        "interact-controls.css": "text/css",
