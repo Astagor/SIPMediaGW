@@ -104,10 +104,8 @@ class EduMeet extends UIHelper {
             this._setValue(nameInput, this.displayName);
             console.log('[✓] Name field filled');
             if (this.audioOnly) this._setToggle('webcam', false);
-            const tokenField = this._control('meeting-token');
-            if (tokenField) {
-                // Below the device choices on a 720p screen: brought into view, so the room sees what is missing.
-                tokenField.scrollIntoView({ block: 'center' });
+            if (this._control('meeting-token')) {
+                this._keepInView('meeting-token');
                 console.log('[INFO] The room asks for its meeting token: waiting for it from the control page');
                 return;
             }
@@ -338,6 +336,22 @@ class EduMeet extends UIHelper {
 
     // Null on a client without data-edumeet-* attributes: the control page then
     // offers its plain keys, as for a connector that reports no state.
+    // Below the device choices on a 720p screen, and pushed down again when they load after the
+    // dialog: kept in view while the room waits, so it sees what is missing.
+    _keepInView(name) {
+        clearInterval(this._inViewTimer);
+        const check = () => {
+            const el = this._control(name);
+            if (!el || this.tokenSent || this._inMeeting()) {
+                clearInterval(this._inViewTimer);
+                return;
+            }
+            el.scrollIntoView({ block: 'center' });
+        };
+        check();
+        this._inViewTimer = setInterval(check, 1000);
+    }
+
     // A meetings-only room refuses a join without its meeting token: eduMEET then reloads its
     // page and shows the token field, empty, or holding the token it refused.
     meetingTokenState() {
