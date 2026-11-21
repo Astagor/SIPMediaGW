@@ -13,8 +13,11 @@ from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 import rtcstatsTrace
 
 MAX_RELOADS = 20
+# A refused meeting (not open yet, or over) stays on screen this long, then the call ends.
+REFUSED_HOLD_SECONDS = 30
 JOIN_STATE = ("if (!window.meeting) return 'reloaded';"
               "if (window.meeting.joined) return 'joined';"
+              "if (window.meeting.refusal) return 'refused:' + window.meeting.refusal;"
               "return window.meeting.awaitingInput || null;")
 
 
@@ -259,6 +262,11 @@ class Browsing:
                 state = None
             if state == 'joined':
                 return True
+            if isinstance(state, str) and state.startswith('refused:'):
+                print(f"The meeting page refused the meeting ({state[8:]}), hanging up in {REFUSED_HOLD_SECONDS} s.", flush=True)
+                time.sleep(REFUSED_HOLD_SECONDS)
+                self.hangUp()
+                return False
             if state == 'reloaded':
                 if reloads >= MAX_RELOADS:
                     print("The meeting page keeps reloading, hanging up.", flush=True)

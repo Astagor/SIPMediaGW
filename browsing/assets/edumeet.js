@@ -104,6 +104,11 @@ class EduMeet extends UIHelper {
             this._setValue(nameInput, this.displayName);
             console.log('[✓] Name field filled');
             if (this.audioOnly) this._setToggle('webcam', false);
+            if (this._closedMeeting()) {
+                this._keepInView('meeting-closed');
+                console.log('[INFO] The meeting is not open now: nothing to join');
+                return;
+            }
             if (this._control('meeting-token')) {
                 this._keepInView('meeting-token');
                 console.log('[INFO] The room asks for its meeting token: waiting for it from the control page');
@@ -381,7 +386,27 @@ class EduMeet extends UIHelper {
         return true;
     }
 
+    // A right token at the wrong time: eduMEET says why, with the times of the meeting.
+    _closedMeeting() {
+        const el = this._control('meeting-closed');
+        if (!el || this._inMeeting()) return null;
+        const reason = el.getAttribute('data-edumeet-reason');
+        if (reason !== 'early' && reason !== 'over') return null;
+        const time = (name) => {
+            const value = parseInt(el.getAttribute(name), 10);
+            return Number.isNaN(value) ? null : value;
+        };
+        return { reason, startsAt: time('data-edumeet-starts-at'), endsAt: time('data-edumeet-ends-at') };
+    }
+
+    get refusal() {
+        const closed = this._closedMeeting();
+        return closed ? closed.reason : null;
+    }
+
     uiState() {
+        const closed = this._closedMeeting();
+        if (closed) return { meetingToken: closed.reason, startsAt: closed.startsAt, endsAt: closed.endsAt };
         const meetingToken = this.meetingTokenState();
         if (meetingToken) return { meetingToken };
         const media = this.mediaState();

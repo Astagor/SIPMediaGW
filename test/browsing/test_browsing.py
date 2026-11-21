@@ -507,6 +507,16 @@ def test_the_timeout_counts_from_the_last_time_the_page_asked(monkeypatch):
     session.hangUp.assert_not_called()
 
 
+def test_a_refused_meeting_stays_on_screen_then_the_call_ends(monkeypatch):
+    slept = []
+    monkeypatch.setattr(browsing_module.time, "sleep", slept.append)
+    session = waiting(new_session(), ["refused:early"])
+    assert session.waitJoined() is False
+    assert slept == [browsing_module.REFUSED_HOLD_SECONDS]
+    session.hangUp.assert_called_once_with()
+    session.join.assert_not_called()
+
+
 def test_a_session_that_never_joins_does_not_show_the_menu():
     session = new_session()
     steps, pairings, driver = running(session)

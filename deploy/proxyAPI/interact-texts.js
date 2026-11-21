@@ -49,6 +49,8 @@ const TEXTS = {
     tokenInvalid: 'This meeting token is not valid for this room. Check the invitation link or the token.',
     tokenHint: 'In the invitation link it follows meetingToken=. You can also paste the whole link.',
     linkOtherPlatform: (host) => `This link is for ${host}. Choose that platform first.`,
+    meetingEarly: (start) => `This meeting has not started yet. It starts at ${start}.`,
+    meetingOver: (end) => `This meeting is over. It ended at ${end}.`,
   },
   fr: {
     title: 'Contrôler votre réunion',
@@ -99,6 +101,8 @@ const TEXTS = {
     tokenInvalid: "Ce jeton de réunion n'est pas valide pour cette salle. Vérifiez le lien d'invitation ou le jeton.",
     tokenHint: 'Dans le lien d’invitation, il suit meetingToken=. Vous pouvez aussi coller le lien entier.',
     linkOtherPlatform: (host) => `Ce lien est pour ${host}. Choisissez d’abord cette plateforme.`,
+    meetingEarly: (start) => `Cette réunion n'a pas encore commencé. Elle commence le ${start}.`,
+    meetingOver: (end) => `Cette réunion est terminée. Elle s'est terminée le ${end}.`,
   },
   cs: {
     title: 'Ovládejte svou schůzku',
@@ -149,6 +153,8 @@ const TEXTS = {
     tokenInvalid: 'Tento token schůzky není pro tuto místnost platný. Zkontrolujte odkaz z pozvánky nebo token.',
     tokenHint: 'V odkazu z pozvánky následuje za meetingToken=. Můžete také vložit celý odkaz.',
     linkOtherPlatform: (host) => `Tento odkaz patří k ${host}. Nejprve vyberte tuto platformu.`,
+    meetingEarly: (start) => `Tato schůzka ještě nezačala. Začíná ${start}.`,
+    meetingOver: (end) => `Tato schůzka už skončila. Skončila ${end}.`,
   },
   da: {
     title: 'Styr dit møde',
@@ -199,6 +205,8 @@ const TEXTS = {
     tokenInvalid: 'Dette mødetoken er ikke gyldigt for dette rum. Tjek invitationslinket eller tokenet.',
     tokenHint: 'I invitationslinket står det efter meetingToken=. Du kan også indsætte hele linket.',
     linkOtherPlatform: (host) => `Dette link er til ${host}. Vælg først den platform.`,
+    meetingEarly: (start) => `Dette møde er ikke begyndt endnu. Det begynder ${start}.`,
+    meetingOver: (end) => `Dette møde er slut. Det sluttede ${end}.`,
   },
   de: {
     title: 'Ihre Besprechung steuern',
@@ -249,6 +257,8 @@ const TEXTS = {
     tokenInvalid: 'Dieses Meeting-Token ist für diesen Raum nicht gültig. Prüfen Sie den Einladungslink oder das Token.',
     tokenHint: 'Im Einladungslink steht es nach meetingToken=. Sie können auch den ganzen Link einfügen.',
     linkOtherPlatform: (host) => `Dieser Link gehört zu ${host}. Wählen Sie zuerst diese Plattform.`,
+    meetingEarly: (start) => `Dieses Meeting hat noch nicht begonnen. Es beginnt am ${start}.`,
+    meetingOver: (end) => `Dieses Meeting ist vorbei. Es endete am ${end}.`,
   },
   el: {
     title: 'Ελέγξτε τη σύσκεψή σας',
@@ -299,6 +309,8 @@ const TEXTS = {
     tokenInvalid: 'Αυτό το διακριτικό συνάντησης δεν ισχύει για αυτό το δωμάτιο. Ελέγξτε τον σύνδεσμο της πρόσκλησης ή το διακριτικό.',
     tokenHint: 'Στον σύνδεσμο της πρόσκλησης βρίσκεται μετά το meetingToken=. Μπορείτε επίσης να επικολλήσετε ολόκληρο τον σύνδεσμο.',
     linkOtherPlatform: (host) => `Αυτός ο σύνδεσμος είναι για το ${host}. Επιλέξτε πρώτα αυτή την πλατφόρμα.`,
+    meetingEarly: (start) => `Αυτή η συνάντηση δεν έχει αρχίσει ακόμη. Αρχίζει στις ${start}.`,
+    meetingOver: (end) => `Αυτή η συνάντηση έχει τελειώσει. Τελείωσε στις ${end}.`,
   },
   es: {
     title: 'Controle su reunión',
@@ -349,6 +361,8 @@ const TEXTS = {
     tokenInvalid: 'Este token de reunión no es válido para esta sala. Compruebe el enlace de la invitación o el token.',
     tokenHint: 'En el enlace de la invitación va detrás de meetingToken=. También puede pegar el enlace completo.',
     linkOtherPlatform: (host) => `Este enlace es de ${host}. Elija primero esa plataforma.`,
+    meetingEarly: (start) => `Esta reunión aún no ha empezado. Empieza el ${start}.`,
+    meetingOver: (end) => `Esta reunión ha terminado. Terminó el ${end}.`,
   },
   hr: {
     title: 'Upravljajte sastankom',
@@ -399,6 +413,8 @@ const TEXTS = {
     tokenInvalid: 'Ovaj token sastanka nije valjan za ovu sobu. Provjerite poveznicu iz pozivnice ili token.',
     tokenHint: 'U poveznici iz pozivnice nalazi se iza meetingToken=. Možete zalijepiti i cijelu poveznicu.',
     linkOtherPlatform: (host) => `Ova poveznica je za ${host}. Najprije odaberite tu platformu.`,
+    meetingEarly: (start) => `Ovaj sastanak još nije počeo. Počinje ${start}.`,
+    meetingOver: (end) => `Ovaj sastanak je završio. Završio je ${end}.`,
   },
   hu: {
     title: 'Az értekezlet vezérlése',
@@ -449,6 +465,8 @@ const TEXTS = {
     tokenInvalid: 'Ez a megbeszélés-token nem érvényes ehhez a szobához. Ellenőrizze a meghívó linkjét vagy a tokent.',
     tokenHint: 'A meghívó linkjében a meetingToken= után áll. A teljes linket is beillesztheti.',
     linkOtherPlatform: (host) => `Ez a link a(z) ${host} címhez tartozik. Először azt a platformot válassza.`,
+    meetingEarly: (start) => `Ez a megbeszélés még nem kezdődött el. Kezdete: ${start}.`,
+    meetingOver: (end) => `Ez a megbeszélés véget ért. Vége: ${end}.`,
   },
   it: {
     title: 'Controlla la riunione',
@@ -499,6 +517,8 @@ const TEXTS = {
     tokenInvalid: "Questo token della riunione non è valido per questa stanza. Controlla il link dell'invito o il token.",
     tokenHint: 'Nel link dell’invito segue meetingToken=. Puoi anche incollare l’intero link.',
     linkOtherPlatform: (host) => `Questo link è per ${host}. Scegli prima quella piattaforma.`,
+    meetingEarly: (start) => `Questa riunione non è ancora iniziata. Inizia il ${start}.`,
+    meetingOver: (end) => `Questa riunione è terminata. È finita il ${end}.`,
   },
   nb: {
     title: 'Styr møtet ditt',
@@ -549,6 +569,8 @@ const TEXTS = {
     tokenInvalid: 'Dette møtetokenet er ikke gyldig for dette rommet. Sjekk invitasjonslenken eller tokenet.',
     tokenHint: 'I invitasjonslenken står det etter meetingToken=. Du kan også lime inn hele lenken.',
     linkOtherPlatform: (host) => `Denne lenken er for ${host}. Velg den plattformen først.`,
+    meetingEarly: (start) => `Dette møtet har ikke begynt ennå. Det begynner ${start}.`,
+    meetingOver: (end) => `Dette møtet er over. Det sluttet ${end}.`,
   },
   pl: {
     title: 'Steruj spotkaniem',
@@ -599,6 +621,8 @@ const TEXTS = {
     tokenInvalid: 'Ten token spotkania nie jest ważny dla tego pokoju. Sprawdź link z zaproszenia lub token.',
     tokenHint: 'W linku z zaproszenia występuje po meetingToken=. Możesz też wkleić cały link.',
     linkOtherPlatform: (host) => `Ten link dotyczy ${host}. Najpierw wybierz tę platformę.`,
+    meetingEarly: (start) => `To spotkanie jeszcze się nie rozpoczęło. Rozpoczyna się ${start}.`,
+    meetingOver: (end) => `To spotkanie już się zakończyło. Zakończyło się ${end}.`,
   },
   pt: {
     title: 'Controlar a sua reunião',
@@ -649,6 +673,8 @@ const TEXTS = {
     tokenInvalid: 'Este token de reunião não é válido para esta sala. Verifique o link do convite ou o token.',
     tokenHint: 'No link do convite, aparece depois de meetingToken=. Também pode colar o link completo.',
     linkOtherPlatform: (host) => `Este link é para ${host}. Escolha primeiro essa plataforma.`,
+    meetingEarly: (start) => `Esta reunião ainda não começou. Começa em ${start}.`,
+    meetingOver: (end) => `Esta reunião já terminou. Terminou em ${end}.`,
   },
   ro: {
     title: 'Controlați întâlnirea',
@@ -699,6 +725,8 @@ const TEXTS = {
     tokenInvalid: 'Acest token de întâlnire nu este valid pentru această cameră. Verificați linkul din invitație sau tokenul.',
     tokenHint: 'În linkul din invitație apare după meetingToken=. Puteți lipi și linkul întreg.',
     linkOtherPlatform: (host) => `Acest link este pentru ${host}. Alegeți mai întâi acea platformă.`,
+    meetingEarly: (start) => `Această întâlnire nu a început încă. Începe pe ${start}.`,
+    meetingOver: (end) => `Această întâlnire s-a încheiat. S-a încheiat pe ${end}.`,
   },
   ru: {
     title: 'Управление встречей',
@@ -749,6 +777,8 @@ const TEXTS = {
     tokenInvalid: 'Этот токен встречи недействителен для этой комнаты. Проверьте ссылку из приглашения или токен.',
     tokenHint: 'В ссылке из приглашения он идёт после meetingToken=. Можно также вставить всю ссылку.',
     linkOtherPlatform: (host) => `Эта ссылка для ${host}. Сначала выберите эту платформу.`,
+    meetingEarly: (start) => `Эта встреча ещё не началась. Она начинается ${start}.`,
+    meetingOver: (end) => `Эта встреча уже закончилась. Она закончилась ${end}.`,
   },
   tr: {
     title: 'Toplantınızı yönetin',
@@ -799,6 +829,8 @@ const TEXTS = {
     tokenInvalid: 'Bu toplantı belirteci bu oda için geçerli değil. Davet bağlantısını veya belirteci kontrol edin.',
     tokenHint: 'Davet bağlantısında meetingToken= ifadesinden sonra gelir. Bağlantının tamamını da yapıştırabilirsiniz.',
     linkOtherPlatform: (host) => `Bu bağlantı ${host} için. Önce o platformu seçin.`,
+    meetingEarly: (start) => `Bu toplantı henüz başlamadı. Başlangıç: ${start}.`,
+    meetingOver: (end) => `Bu toplantı sona erdi. Bitiş: ${end}.`,
   },
   uk: {
     title: 'Керуйте нарадою',
@@ -849,6 +881,8 @@ const TEXTS = {
     tokenInvalid: 'Цей токен зустрічі недійсний для цієї кімнати. Перевірте посилання із запрошення або токен.',
     tokenHint: 'У посиланні із запрошення він іде після meetingToken=. Можна також вставити все посилання.',
     linkOtherPlatform: (host) => `Це посилання для ${host}. Спершу виберіть цю платформу.`,
+    meetingEarly: (start) => `Ця зустріч ще не почалася. Вона починається ${start}.`,
+    meetingOver: (end) => `Ця зустріч уже закінчилася. Вона закінчилася ${end}.`,
   },
 };
 

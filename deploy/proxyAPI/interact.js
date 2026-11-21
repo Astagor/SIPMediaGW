@@ -362,12 +362,25 @@ let pendingToken = '';
 let tokenReason = null;
 let tokenRefusal = 'required';
 let tokenFlow = false;
+let tokenTimes = {};
 
-function showTokenScreen(reason) {
+const meetingClosed = (reason) => reason === 'early' || reason === 'over';
+
+function atTime(ms) {
+  if (!Number.isFinite(ms)) return '';
+  try {
+    return new Intl.DateTimeFormat(currentLang, { dateStyle: 'medium', timeStyle: 'short' }).format(ms);
+  } catch (e) {
+    return new Date(ms).toLocaleString();
+  }
+}
+
+function showTokenScreen(reason, ui) {
   const first = $('screen-token').hidden;
   tokenFlow = true;
   tokenReason = reason;
   if (reason !== 'checking') tokenRefusal = reason;
+  if (meetingClosed(reason)) tokenTimes = { startsAt: ui && ui.startsAt, endsAt: ui && ui.endsAt };
   showScreen('token');
   const val = webrtcDomains[browsingName] || {};
   $('token-platform').textContent = (val.name || browsingName || '').replace(/\s*\(.*\)$/, '').trim();
@@ -379,7 +392,7 @@ function showTokenScreen(reason) {
     return;
   }
   paintToken();
-  if (first) $('token-input').focus();
+  if (first && !meetingClosed(reason)) $('token-input').focus();
 }
 
 function paintToken() {
@@ -387,7 +400,12 @@ function paintToken() {
   $('token-label').textContent = t.tokenLabel;
   $('token-hint').textContent = t.tokenHint;
   $('btn-token-label').textContent = t.join;
-  $('token-message').textContent = tokenRefusal === 'invalid' ? t.tokenInvalid : t.tokenRequired;
+  const closed = meetingClosed(tokenRefusal);
+  $('token-message').textContent = tokenRefusal === 'early' ? t.meetingEarly(atTime(tokenTimes.startsAt))
+    : tokenRefusal === 'over' ? t.meetingOver(atTime(tokenTimes.endsAt))
+      : tokenRefusal === 'invalid' ? t.tokenInvalid : t.tokenRequired;
+  $('token-input').parentElement.hidden = closed;
+  $('btn-token').hidden = closed;
   const checking = tokenReason === 'checking';
   $('token-spinner').hidden = !checking;
   $('token-input').disabled = checking;
@@ -957,7 +975,7 @@ async function syncCtrlState(force = false) {
   // The join page shows switches too: a token refused after they were drawn ends up here.
   if (ui && ui.meetingToken) {
     menuDisplayed = false;
-    showTokenScreen(ui.meetingToken);
+    showTokenScreen(ui.meetingToken, ui);
     setTimeout(renderMenuOptions, POLL_MS);
     return;
   }
@@ -1028,7 +1046,7 @@ async function renderMenuOptions() {
   // connector has no uiState: the second empty read is taken as the answer.
   ctrlState = await fetchCtrlState();
   if (ctrlState && ctrlState.meetingToken) {
-    showTokenScreen(ctrlState.meetingToken);
+    showTokenScreen(ctrlState.meetingToken, ctrlState);
     ctrlState = null;
     menuDisplayed = false;
     return setTimeout(renderMenuOptions, POLL_MS);
