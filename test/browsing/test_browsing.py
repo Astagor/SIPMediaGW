@@ -112,7 +112,7 @@ def connector_values(session):
 def test_the_connector_gets_the_meeting_values():
     assert connector_values(new_session()) == (
         "meet.example.org", "room1", "Room A", "en", '{"en": {"room": "Enter the room number"}}',
-        "token1", "None", "False")
+        "token1", "None", "False", "")
 
 
 @pytest.mark.parametrize("layout, by_default, expected", [
@@ -130,7 +130,7 @@ def test_the_dual_screen_starts_on_only_when_both_settings_say_so(monkeypatch, l
 
 def test_the_connector_learns_that_the_call_is_audio_only(monkeypatch):
     monkeypatch.setenv("AUDIO_ONLY", "true")
-    assert connector_values(new_session())[5:] == ("token1", "true", "False")
+    assert connector_values(new_session())[5:8] == ("token1", "true", "False")
 
 
 def test_the_base_hooks_do_nothing():
@@ -167,6 +167,7 @@ def test_the_join_loads_the_helpers_then_the_connector_then_joins():
 def test_the_menu_images_are_read_as_data_urls(tmp_path):
     (tmp_path / "icon.png").write_bytes(b"ICON")
     (tmp_path / "dtmf_fr.png").write_bytes(b"DTMF")
+    (tmp_path / "dtmf_en.png").write_bytes(b"DTMF-EN")
     icons = tmp_path / "IVR" / "images" / "menu-icons"
     icons.mkdir(parents=True)
     (icons / "mic.png").write_bytes(b"MIC")
@@ -177,6 +178,17 @@ def test_the_menu_images_are_read_as_data_urls(tmp_path):
     assert session.iconB64 == "data:image/png;base64,SUNPTg=="
     assert session.dtmfB64 == "data:image/png;base64,RFRNRg=="
     assert session.menuIcons == {"mic": "data:image/png;base64,TUlD", "camera": "data:image/png;base64,Q0FN"}
+
+
+@pytest.mark.parametrize("lang", ["", None, "pl"])
+def test_the_keypad_picture_is_english_without_one_in_the_language(tmp_path, lang):
+    (tmp_path / "icon.png").write_bytes(b"ICON")
+    (tmp_path / "dtmf_fr.png").write_bytes(b"DTMF")
+    (tmp_path / "dtmf_en.png").write_bytes(b"DTMF-EN")
+    (tmp_path / "IVR" / "images" / "menu-icons").mkdir(parents=True)
+    session = new_session()
+    session.loadImages(str(tmp_path), lang)
+    assert session.dtmfB64 == "data:image/png;base64,RFRNRi1FTg=="
 
 
 # The call ends when the gateway stays alone

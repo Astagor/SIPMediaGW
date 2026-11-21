@@ -58,7 +58,12 @@ def test_the_room_name_reaches_the_connector_as_it_is():
 def test_the_connector_gets_the_strings_it_expects():
     assert connector_values() == [
         "meet.example.org", "room1", "Salle A", "fr", json.dumps(PROMPTS, ensure_ascii=False),
-        "token1", "None", "False"]
+        "token1", "None", "False", ""]
+
+
+def test_the_language_of_the_control_page_comes_last():
+    assert connector_values(language="pl")[8] == "pl"
+    assert connector_values(language=None)[8] == ""
 
 
 def test_the_prompts_keep_their_characters():
@@ -75,4 +80,4 @@ def test_audio_only_and_the_dual_screen_are_strings(monkeypatch):
     monkeypatch.setenv("AUDIO_ONLY", "true")
     monkeypatch.setenv("DUAL_SCREEN_LAYOUT", "true")
     monkeypatch.setenv("DUAL_SCREEN_BY_DEFAULT", "true")
-    assert connector_values()[6:] == ["true", "True"]
+    assert connector_values()[6:8] == ["true", "True"]

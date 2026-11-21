@@ -612,13 +612,28 @@ class DockerGateway:
                     token
                 )
             return {"ack": True, "ok": bool(ok)}
+        elif payload['command'] == 'language':
+            language = str(payload.get('param1') or '').strip().lower()
+            ok = False
+            if re.fullmatch(r'[a-z]{2,3}(-[a-z0-9]{2,8})?', language):
+                ok = self.executeInExistingChromeSession(
+                    gwId,
+                    "return (window.meeting && window.meeting.setLanguage) ? "
+                    "window.meeting.setLanguage(arguments[0]) : false;",
+                    language
+                )
+            return {"ack": True, "language": bool(ok)}
         elif payload['command'] == 'roomName':
             # safe read of optional param1
             default = payload.get('param1', None)
+            # param2: the language of the control page, checked by the IVR before it is used
+            language = payload.get('param2')
             res = {"ack": True}
             self.executeInExistingChromeSession(gwId, """
                 window.inputRoomName = arguments[0];
-                document.dispatchEvent(new KeyboardEvent('keydown', {'key': '#'}));;""", default)
+                window.inputRoomLanguage = arguments[1];
+                document.dispatchEvent(new KeyboardEvent('keydown', {'key': '#'}));;""", default,
+                language if isinstance(language, str) else None)
             return res
         #status = DockerGateway.get_gateway_docker_status(gw_id)
         if status is None:

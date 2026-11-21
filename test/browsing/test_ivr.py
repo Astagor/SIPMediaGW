@@ -53,7 +53,7 @@ def ivr(monkeypatch):
     return instance
 
 
-def scripted_driver(browsing=None, room=None, limit=200):
+def scripted_driver(browsing=None, room=None, limit=200, language=None):
     """
     A driver whose page reports browsing and room as the IVR page does: the
     platform keeps its last value, as window.browsing does. It answers at most
@@ -72,9 +72,12 @@ def scripted_driver(browsing=None, room=None, limit=200):
             return browsing.pop(0) if len(browsing) > 1 else (browsing[0] if browsing else None)
         if script == "return window.room":
             return room.pop(0) if room else None
+        if script == "return window.inputRoomLanguage":
+            return language
         return None
     driver.execute_script.side_effect = execute
     return driver
+
 
 
 class TestConstruction:
@@ -126,6 +129,16 @@ class TestBrowserLanguage:
         ivr.chromeOptions.experimental_options["prefs"] = {"keep": 1}
         ivr.applyBrowserLanguage("fr")
         assert ivr.chromeOptions.experimental_options["prefs"]["keep"] == 1
+
+
+class TestPhoneLanguage:
+    @pytest.mark.parametrize("value, tag", [
+        ("pl", "pl"), (" PT-br ", "pt-br"), ("nb", "nb"),
+        ("", None), (None, None), (12, None), ("en_US", None),
+        ("pl'); alert(1)//", None), ("pl --flag", None), ("toolonglanguage", None),
+    ])
+    def test_only_a_plain_language_tag(self, value, tag):
+        assert ivr_module.phoneLanguage(value) == tag
 
 
 class TestSetUrl:
@@ -213,6 +226,17 @@ class TestPrompt:
         menu = os.path.join(os.path.dirname(__file__), "../../browsing/assets/IVR/menu.js")
         with open(menu, encoding="utf-8") as f:
             assert ivr.driver.execute_script.call_args_list[0].args[0] == f.read()
+
+    def test_the_language_of_the_control_page_goes_with_the_room(self, ivr):
+        ivr.driver = scripted_driver(browsing=["edumeet.example.org"], room=[{"roomName": "lecture1"}], language=" PL ")
+        with patch.object(ivr, "readPairingCode"):
+            assert ivr.prompt() == ("edumeet.example.org", {"roomName": "lecture1", "language": "pl"})
+
+    @pytest.mark.parametrize("language", [None, "", "pl\"; x", ["pl"]])
+    def test_no_language_without_a_plain_one(self, ivr, language):
+        ivr.driver = scripted_driver(browsing=["edumeet.example.org"], room=[{"roomName": "lecture1"}], language=language)
+        with patch.object(ivr, "readPairingCode"):
+            assert ivr.prompt() == ("edumeet.example.org", {"roomName": "lecture1"})
 
     def test_a_platform_chosen_again_is_the_one_returned(self, ivr, capsys):
         # 0 # on the room step sends the page back to the list (window.browsing empty).

@@ -31,16 +31,19 @@ const REACTIONS = {
 };
 // A locked room keeps the gateway in its lobby until a moderator admits it.
 const LOBBY_TIMEOUT = 15 * 60 * 1000;
+// eduMEET reloads after a refused meeting token: the reloaded page keeps the language asked for last.
+const LANGUAGE_KEY = 'sipmediagw.language';
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 class EduMeet extends UIHelper {
-    constructor(domain, roomName, displayName, lang, prompts, token, audioOnly, dualScreenOn) {
+    constructor(domain, roomName, displayName, lang, prompts, token, audioOnly, dualScreenOn, phoneLanguage) {
         super();
         this.domain = domain;
         this.roomName = roomName;
         this.displayName = displayName;
         this.lang = lang;
+        this.phoneLanguage = phoneLanguage;
         this.token = token;
         this.audioOnly = audioOnly === "true";
         this.joined = false;
@@ -101,6 +104,9 @@ class EduMeet extends UIHelper {
                 return;
             }
             nameInput = this._control('name') || nameInput;
+            // A page without the automation attributes is driven by its texts, in English or
+            // French: it keeps the gateway's language.
+            this.setLanguage(this._languageAskedLast() || this.phoneLanguage);
             this._setValue(nameInput, this.displayName);
             console.log('[✓] Name field filled');
             if (this.audioOnly) this._setToggle('webcam', false);
@@ -384,6 +390,19 @@ class EduMeet extends UIHelper {
             console.log('[✓] Joined the meeting with its meeting token');
         });
         return true;
+    }
+
+    // eduMEET switches as with its language chooser, on every screen, and ignores a language
+    // it has no translation for.
+    setLanguage(code) {
+        if (typeof code !== 'string' || !code || !document.querySelector('[data-edumeet-control]')) return false;
+        document.dispatchEvent(new CustomEvent('edumeet:set-locale', { detail: { locale: code } }));
+        try { sessionStorage.setItem(LANGUAGE_KEY, code); } catch (e) { /* the page then starts in the room's language */ }
+        return true;
+    }
+
+    _languageAskedLast() {
+        try { return sessionStorage.getItem(LANGUAGE_KEY) || ''; } catch (e) { return ''; }
     }
 
     // A right token at the wrong time: eduMEET says why, with the times of the meeting.

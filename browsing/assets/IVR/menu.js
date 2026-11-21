@@ -113,7 +113,7 @@ class Menu {
     }
 
     createFlexLine(option) {
-        const lang = this.lang || "fr";
+        const lang = this.lang || "en";
         const line = document.createElement("div");
         Object.assign(line.style, {
             display: "flex",

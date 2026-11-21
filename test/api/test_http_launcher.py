@@ -859,13 +859,40 @@ class TestSendCommandConnector:
         assert gw.sendCommand("my-gw", {"command": "displayName"}) == {"ack": True, "displayName": "Room 1"}
         assert "get('displayName')" in execute.call_args.args[1]
 
+    def test_a_language_goes_to_the_connector(self, connector_gw):
+        gw, execute, _ = connector_gw
+        execute.return_value = True
+        assert gw.sendCommand("my-gw", {"command": "language", "param1": " PL "}) == {"ack": True, "language": True}
+        script, language = execute.call_args.args[1:]
+        assert "window.meeting.setLanguage(arguments[0])" in script
+        assert language == "pl"
+
+    def test_a_connector_without_languages_answers_false(self, connector_gw):
+        gw, execute, _ = connector_gw
+        execute.return_value = False
+        assert gw.sendCommand("my-gw", {"command": "language", "param1": "pl"}) == {"ack": True, "language": False}
+
+    @pytest.mark.parametrize("value", [None, "", "pl'); x", "pl --flag", 12, ["pl"], "toolonglanguage"])
+    def test_no_plain_language_reaches_no_page(self, connector_gw, value):
+        gw, execute, _ = connector_gw
+        assert gw.sendCommand("my-gw", {"command": "language", "param1": value}) == {"ack": True, "language": False}
+        execute.assert_not_called()
+
     def test_room_name_goes_to_the_ivr(self, connector_gw):
         gw, execute, _ = connector_gw
-        assert gw.sendCommand("my-gw", {"command": "roomName", "param1": "lecture1"}) == {"ack": True}
-        script, room = execute.call_args.args[1:]
+        assert gw.sendCommand("my-gw", {"command": "roomName", "param1": "lecture1", "param2": "pl"}) == {"ack": True}
+        script, room, language = execute.call_args.args[1:]
         assert "window.inputRoomName = arguments[0]" in script
+        assert "window.inputRoomLanguage = arguments[1]" in script
         assert "'key': '#'" in script
         assert room == "lecture1"
+        assert language == "pl"
+
+    @pytest.mark.parametrize("extra", [{}, {"param2": ["pl"]}, {"param2": 12}])
+    def test_a_room_name_without_a_language_string_gives_none(self, connector_gw, extra):
+        gw, execute, _ = connector_gw
+        gw.sendCommand("my-gw", {"command": "roomName", "param1": "lecture1", **extra})
+        assert execute.call_args.args[3] is None
 
     def test_route_answers_404_for_an_unsupported_command(self, client, override_backend):
         override_backend.sendCommand.side_effect = ValueError("reaction 'red-heart' not supported by this connector")

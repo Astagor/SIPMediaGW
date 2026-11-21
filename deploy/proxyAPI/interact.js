@@ -456,8 +456,8 @@ async function sendEndCall() {
 // whether the reply should start the status poll — sendKey and roomName only
 // arm it on a submit key, since the gateway has nothing new to report until the
 // entry is confirmed.
-async function sendCommand(command, param1, { startPolling }) {
-  const payload = { gw_id: gwId, payload: { command, param1 } };
+async function sendCommand(command, param1, { startPolling, param2 }) {
+  const payload = { gw_id: gwId, payload: param2 === undefined ? { command, param1 } : { command, param1, param2 } };
   try {
     await fetch(apiUrl('/command'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (startPolling && !pollingStarted) { pollingStarted = true; setTimeout(checkGwStatus, 1000); }
@@ -477,9 +477,11 @@ async function sendKey(param1) {
   });
 }
 
+// The language of this page goes with the room: the meeting on the room screen opens in it.
 async function sendRoomName(param1) {
   return sendCommand('roomName', param1, {
     startPolling: isSubmitKey(param1),
+    param2: currentLang,
   });
 }
 
@@ -1179,10 +1181,15 @@ function onReady(fn) {
   }
 }
 
-// Language and theme, wired like the pairing page's.
+// Language and theme, wired like the pairing page's. The meeting on the room screen follows the
+// language; before it is open, the gateway has nothing to switch and the language goes with the room.
+let languageTimer = null;
 function setLang(value) {
   currentLang = value;
   renderLangSwitch();
+  // Arrow keys on the menu change it at every step: only the language kept goes.
+  clearTimeout(languageTimer);
+  if (gwId) languageTimer = setTimeout(() => sendCommand('language', currentLang, { startPolling: false }), 400);
 }
 
 $('theme-toggle').addEventListener('click', () => {

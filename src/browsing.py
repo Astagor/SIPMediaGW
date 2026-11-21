@@ -58,7 +58,8 @@ class Browsing:
                          self.room['roomToken'],
                          os.environ.get('AUDIO_ONLY'),
                          True if os.getenv("DUAL_SCREEN_LAYOUT") == "true"
-                             and os.getenv("DUAL_SCREEN_BY_DEFAULT") == "true" else False]
+                             and os.getenv("DUAL_SCREEN_BY_DEFAULT") == "true" else False,
+                         self.room.get('language') or '']
         self.initScript = "window.meeting = new window.Browsing({})".format(
             ", ".join(json.dumps(str(value)) for value in connectorArgs))
 
@@ -74,7 +75,11 @@ class Browsing:
         with open(os.path.join(path, "icon.png"), "rb") as f:
             self.iconB64 = "data:image/png;base64," + base64.b64encode(f.read()).decode("utf-8")
 
-        with open(os.path.join(path, f"dtmf_{lang}.png"), "rb") as f:
+        # The keypad picture exists in a few languages: English when the configured one has none.
+        dtmf = os.path.join(path, f"dtmf_{lang}.png")
+        if not lang or not os.path.isfile(dtmf):
+            dtmf = os.path.join(path, "dtmf_en.png")
+        with open(dtmf, "rb") as f:
             self.dtmfB64 = "data:image/png;base64," + base64.b64encode(f.read()).decode("utf-8")
 
         icons_path = os.path.join(path, "IVR/images/menu-icons")

@@ -19,6 +19,28 @@ def test_logo_svg_is_served_directly(client):
     assert "<svg" in response.text.lower()
 
 
+@pytest.mark.parametrize("path, page", [
+    ("/docs", "docs.en.html"), ("/docs?lang=en", "docs.en.html"),
+    ("/docs?lang=fr", "docs.fr.html"), ("/docs?lang=xx", "docs.en.html"),
+])
+def test_docs_open_in_english_unless_french_is_asked(client, monkeypatch, path, page):
+    folder = os.path.dirname(proxy.__file__)
+    monkeypatch.chdir(folder)
+    response = client.get(path)
+    assert response.status_code == 200
+    with open(os.path.join(folder, "docs", page), encoding="utf-8") as f:
+        assert response.text == f.read()
+
+
+@pytest.mark.parametrize("page", ["docs.en.html", "docs.fr.html"])
+def test_docs_language_links_match_the_route(page):
+    with open(os.path.join(os.path.dirname(proxy.__file__), "docs", page), encoding="utf-8") as f:
+        html = f.read()
+    assert 'hreflang="en" href="/docs"' in html and 'href="/docs" lang="en"' in html
+    assert 'hreflang="fr" href="/docs?lang=fr"' in html and 'href="/docs?lang=fr" lang="fr"' in html
+    assert "/docs/en" not in html and "/docs?lang=en" not in html
+
+
 def test_authorize_valid_token():
     request = Mock(headers={"Authorization": "Bearer 1234"})
     assert proxy.authorize(request) is True

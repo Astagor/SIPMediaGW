@@ -5,6 +5,7 @@ import inspect
 import json
 import time
 import queue
+import re
 import traceback
 import urllib.parse
 import qrcode
@@ -15,6 +16,16 @@ from io import BytesIO
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
+
+# The language of the control page goes into the script of the meeting page: a plain language tag only.
+LANGUAGE_TAG = re.compile(r'[a-z]{2,3}(?:-[a-z0-9]{2,8})?')
+
+
+def phoneLanguage(value):
+    if not isinstance(value, str):
+        return None
+    tag = value.strip().lower()
+    return tag if LANGUAGE_TAG.fullmatch(tag) else None
 
 
 class IVR:
@@ -206,6 +217,9 @@ class IVR:
                     room = self.driver.execute_script("return window.room")
                     if room:
                         print("IVR: room: {}".format(room['roomName']), flush=True)
+                        language = phoneLanguage(self.driver.execute_script("return window.inputRoomLanguage"))
+                        if language:
+                            room['language'] = language
                         return browsingName, room
                 self.interact()
                 self.readPairingCode(self.driver)

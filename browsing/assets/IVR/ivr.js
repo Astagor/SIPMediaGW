@@ -46,7 +46,8 @@ function initIVR(config) {
     const brand = window.ivrBrand || {};
     const prompts = Object.fromEntries(Object.entries(config['ivr_prompts'])
         .map(([l, p]) => [l, { ...p, ...((brand.prompts || {})[l] || {}) }]));
-    const lang = config['lang'] || 'fr';
+    const lang = config['lang'] || 'en';
+    document.documentElement.lang = lang;
     const expectedLength = parseInt(config['min_ivr_digit_length'], 10) || 0;
     const urlMixedId = new URLSearchParams(window.location.search).get("mixedId");
     // The SIP address may name a group of platforms by a code: "code", or "code.room"
@@ -253,6 +254,7 @@ function initIVR(config) {
         window.shownDomainKeys = Object.values(domains).map(d => d.key);
         window.browsing = null;
         window.inputRoomName = null;
+        window.inputRoomLanguage = null;
         selectedDomain = null;
         pendingRoomId = null;
         waitingConfirm = null;
