@@ -13,6 +13,9 @@ ENV BARESIP_BRANCH=${BARESIP_BRANCH} \
     BARESIP_VERSION=${BARESIP_VERSION} \
     GW_VERSION=${GW_VERSION}
 
+# BFCP version 1 has no response flag: RFC 4582 reserves that bit. libre sets it in every answer,
+# and Cisco TC endpoints drop such version 1 answers: they repeat FloorStatus, then stop BFCP and
+# send the presentation inside the main video. The patch sets the flag for version 2 only.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd wget unzip net-tools sudo psmisc procps sngrep jq \
     v4l2loopback-utils libsdl2-2.0-0 libgl1-mesa-dri \
@@ -30,6 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     build-essential cmake git \
     && git clone --branch ${BARESIP_BRANCH} https://github.com/Renater/re.git && cd re \
+    && sed -i 's/bfcp_msg_vencode(bc->mb, req->ver, true, prim/bfcp_msg_vencode(bc->mb, req->ver, req->ver >= BFCP_VER2, prim/' src/bfcp/reply.c \
+    && grep -q 'req->ver >= BFCP_VER2' src/bfcp/reply.c \
     && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && cmake --install build && cd .. \
     && git clone --branch ${BARESIP_BRANCH} https://github.com/Renater/baresip.git && cd baresip \
     && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && cmake --install build && cd .. \
