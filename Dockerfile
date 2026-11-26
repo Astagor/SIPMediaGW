@@ -13,9 +13,10 @@ ENV BARESIP_BRANCH=${BARESIP_BRANCH} \
     BARESIP_VERSION=${BARESIP_VERSION} \
     GW_VERSION=${GW_VERSION}
 
-# BFCP version 1 has no response flag: RFC 4582 reserves that bit. libre sets it in every answer,
-# and Cisco TC endpoints drop such version 1 answers: they repeat FloorStatus, then stop BFCP and
-# send the presentation inside the main video. The patch sets the flag for version 2 only.
+# Cisco TC endpoints speak BFCP version 1 over UDP and acknowledge FloorStatus and
+# FloorRequestStatus with their own primitives, 93 and 91. They ignore the standard FloorStatusAck
+# and FloorRequestStatusAck, repeat FloorStatus, then stop BFCP and send the presentation inside
+# the main video. The patch answers version 1 with the Cisco primitives.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd wget unzip net-tools sudo psmisc procps sngrep jq \
     v4l2loopback-utils libsdl2-2.0-0 libgl1-mesa-dri \
@@ -33,10 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     build-essential cmake git \
     && git clone --branch ${BARESIP_BRANCH} https://github.com/Renater/re.git && cd re \
-    && sed -i 's/bfcp_msg_vencode(bc->mb, req->ver, true, prim/bfcp_msg_vencode(bc->mb, req->ver, req->ver >= BFCP_VER2, prim/' src/bfcp/reply.c \
-    && grep -q 'req->ver >= BFCP_VER2' src/bfcp/reply.c \
     && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && cmake --install build && cd .. \
     && git clone --branch ${BARESIP_BRANCH} https://github.com/Renater/baresip.git && cd baresip \
+    && sed -i 's/^\(\s*\)BFCP_FLOOR_STATUS_ACK,$/\1msg->ver == BFCP_VER1 ? (enum bfcp_prim)93 : BFCP_FLOOR_STATUS_ACK,/; s/^\(\s*\)BFCP_FLOOR_REQ_STATUS_ACK,$/\1msg->ver == BFCP_VER1 ? (enum bfcp_prim)91 : BFCP_FLOOR_REQ_STATUS_ACK,/' src/bfcp.c \
+    && grep -q '(enum bfcp_prim)93 : BFCP_FLOOR_STATUS_ACK' src/bfcp.c && grep -q '(enum bfcp_prim)91 : BFCP_FLOOR_REQ_STATUS_ACK' src/bfcp.c \
     && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j && cmake --install build && cd .. \
     && rm -r baresip re \
     && apt-get remove --purge -y \
