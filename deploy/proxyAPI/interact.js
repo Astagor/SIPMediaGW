@@ -17,6 +17,13 @@ const POLL_MS = 2000;
 let lastScreen = null;
 let currentLang = 'en';
 
+// The branding may replace texts of a language, key by key.
+if (typeof BRAND !== 'undefined' && BRAND.texts) {
+  for (const [lang, texts] of Object.entries(BRAND.texts)) {
+    if (TEXTS[lang]) Object.assign(TEXTS[lang], texts);
+  }
+}
+
 let dark = localStorage.getItem('theme')
   ? localStorage.getItem('theme') === 'dark'
   : window.matchMedia('(prefers-color-scheme: dark)').matches;

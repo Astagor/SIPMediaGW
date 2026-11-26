@@ -42,8 +42,11 @@ function initIVR(config) {
     const statusEl = document.getElementById("status");
     const domainsEl = document.getElementById("domains");
 
-    // The branding (window.ivrBrand) may replace prompts of a language, key by key.
+    // The branding (window.ivrBrand) may replace prompts and messages of a language, key by key.
     const brand = window.ivrBrand || {};
+    for (const [l, m] of Object.entries(brand.messages || {})) {
+        if (messages[l]) Object.assign(messages[l], m);
+    }
     const prompts = Object.fromEntries(Object.entries(config['ivr_prompts'])
         .map(([l, p]) => [l, { ...p, ...((brand.prompts || {})[l] || {}) }]));
     const lang = config['lang'] || 'en';
