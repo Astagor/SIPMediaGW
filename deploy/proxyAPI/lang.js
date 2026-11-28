@@ -15,7 +15,7 @@ const LANGUAGES = [
   { code: 'hr', name: 'Hrvatski', tags: ['hr'] },
   { code: 'it', name: 'Italiano', tags: ['it'] },
   { code: 'hu', name: 'Magyar', tags: ['hu'] },
-  { code: 'nb', name: 'Norsk bokmål', tags: ['nb', 'no', 'nn'] },
+  { code: 'nb', name: 'Norsk', tags: ['nb', 'no', 'nn'], tag: 'no' },
   { code: 'pl', name: 'Polski', tags: ['pl'] },
   { code: 'pt', name: 'Português', tags: ['pt'] },
   { code: 'ro', name: 'Română', tags: ['ro'] },
@@ -79,7 +79,7 @@ function setUpLanguageMenu(texts, current, onChange) {
     const option = document.createElement('option');
     option.value = l.code;
     option.textContent = l.name;
-    option.lang = l.code;
+    option.lang = l.tag || l.code;
     select.appendChild(option);
   }
   select.addEventListener('change', () => {
@@ -89,10 +89,39 @@ function setUpLanguageMenu(texts, current, onChange) {
   showLanguage(current, texts);
 }
 
+function sameName(a, b, locale) {
+  return !!a && a.localeCompare(b, locale, { sensitivity: 'accent' }) === 0;
+}
+
+function translatedLanguageName(language, pageCode) {
+  const page = LANGUAGES.find((l) => l.code === pageCode);
+  let names;
+  try {
+    names = new Intl.DisplayNames([pageCode], { type: 'language', fallback: 'none' });
+  } catch (e) {
+    return '';
+  }
+  // A browser without names in the page's language gives none, or English ones.
+  if (!page || !sameName(names.of(page.tag || page.code), page.name, pageCode)) return '';
+  const translated = names.of(language.tag || language.code);
+  if (!translated || sameName(translated, language.name, pageCode)) return '';
+  return translated.charAt(0).toLocaleUpperCase(pageCode) + translated.slice(1);
+}
+
+function labelLanguageOptions(select, pageCode) {
+  for (const option of select.options) {
+    const language = LANGUAGES.find((l) => l.code === option.value);
+    if (!language) continue;
+    const translated = translatedLanguageName(language, pageCode);
+    option.textContent = translated ? language.name + ' (' + translated + ')' : language.name;
+  }
+}
+
 function showLanguage(code, texts) {
   const select = document.getElementById('lang-select');
   const shown = document.getElementById('lang-code');
   if (!select || !shown) return;
+  labelLanguageOptions(select, code);
   select.value = code;
   shown.textContent = code.toUpperCase();
   if (texts && texts[code] && texts[code].language) select.setAttribute('aria-label', texts[code].language);
